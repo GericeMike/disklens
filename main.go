@@ -2,6 +2,9 @@ package main
 
 import (
 	"embed"
+	"os"
+
+	"disklens/internal/cli"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -12,6 +15,11 @@ import (
 var assets embed.FS
 
 func main() {
+	// CLI 模式: disklens scan|compare|list|help
+	if len(os.Args) > 1 {
+		os.Exit(cli.Run(os.Args[1:]))
+	}
+
 	// Create an instance of the app structure
 	app := NewApp()
 
