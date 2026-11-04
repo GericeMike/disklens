@@ -72,7 +72,7 @@ async function renderOverview() {
       </div>
     </div>
     <div class="kpis" id="drives" style="margin-bottom:var(--gap);"></div>
-    <div class="grid-mid">
+    <div class="grid-map">
       <section class="panel">
         <header><h3 style="font-size:16px;font-weight:600;" id="tm-title">方块地图</h3>
         <span class="meta">点击方块下钻 · 悬停查看大小</span></header>
@@ -80,10 +80,15 @@ async function renderOverview() {
         <div class="panel-body" id="treemap"></div>
       </section>
       <section class="panel">
-        <header><h3 style="font-size:16px;font-weight:600;">可清理项</h3><span class="meta num" id="clean-total"></span></header>
-        <div class="panel-body" id="clean-rows"></div>
+        <header><h3 style="font-size:16px;font-weight:600;" id="dl-title">当前目录</h3>
+        <span class="meta">点击行下钻 · ⓘ 看解释</span></header>
+        <div class="panel-body" id="dirlist"></div>
       </section>
     </div>
+    <section class="panel" style="margin:var(--gap) 0;">
+      <header><h3 style="font-size:16px;font-weight:600;">可清理项</h3><span class="meta num" id="clean-total"></span></header>
+      <div class="clean-grid" id="clean-rows"></div>
+    </section>
     <div class="grid-low">
       <section class="panel">
         <header><h3 style="font-size:16px;font-weight:600;">两次扫描变化</h3><span class="meta" id="growth-legend"></span></header>
@@ -108,6 +113,7 @@ async function renderOverview() {
   if (!d.ready) {
     $('#drives').innerHTML = `<div class="empty" style="grid-column:1/-1;">还没有扫描数据 —— 点击「重新扫描」开始</div>`;
     $('#treemap').innerHTML = '';
+    $('#dirlist').innerHTML = '';
     $('#clean-rows').innerHTML = `<div class="empty-inline">扫描后这里会给出知识库判定的可清理清单</div>`;
     $('#growth-chart').innerHTML = `<div class="empty-inline">需要两次扫描才能对比</div>`;
     $('#topfiles-body').innerHTML = '';
@@ -192,7 +198,7 @@ async function renderClean() {
   }
   const total = (items || []).filter(i => i.risk === 'safe').reduce((s, i) => s + i.totalSize, 0);
   $('#clean-total').textContent = items && items.length ? `🟢项合计 ${fmtGB(total)}` : '';
-  el.innerHTML = (items || []).slice(0, 8).map(i => {
+  el.innerHTML = (items || []).slice(0, 12).map(i => {
     const top = (i.paths || [])[0] || {};
     return `
     <div class="clean-row" data-path="${esc(top.path || '')}" style="cursor:pointer;">
@@ -245,9 +251,34 @@ async function loadTreemap(path) {
     ramps: RAMPS[curStyle()], fmt: fmtGB, unit: '', height: h,
     onSelect: (p) => loadTreemap(p),
   });
+  renderDirList(path, kids || []);
   if (!kids || kids.length === 0) {
     box.innerHTML = `<div class="empty-inline">此目录没有可下钻的子目录</div>`;
   }
+}
+
+// 当前目录文字列表: 与左侧地图同步，点击行下钻，ⓘ 打开解释抽屉
+function renderDirList(path, kids) {
+  $('#dl-title').textContent = `${path} · ${kids.length} 个子目录`;
+  const el = $('#dirlist');
+  if (!kids.length) {
+    el.innerHTML = `<div class="empty-inline">此目录没有子目录</div>`;
+    return;
+  }
+  el.innerHTML = kids.map(k => `
+    <div class="dir-row" data-p="${esc(k.path)}">
+      ${k.risk ? riskPill(k.risk) : ''}
+      <span class="dname" title="${esc(k.name)}">${esc(k.name)}</span>
+      ${k.kbName ? `<span class="dkb" title="${esc(k.kbName)}">${esc(k.kbName)}</span>` : ''}
+      <span class="dsize num">${fmtGB(k.bytes)}</span>
+      <button class="dinfo" data-explain="${esc(k.path)}" title="知识库解释">ⓘ</button>
+    </div>`).join('');
+  el.querySelectorAll('.dir-row').forEach(row => {
+    row.addEventListener('click', () => loadTreemap(row.dataset.p));
+  });
+  el.querySelectorAll('.dinfo').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); openExplain(btn.dataset.explain); });
+  });
 }
 
 function nodeName(p) {

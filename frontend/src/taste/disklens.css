@@ -127,6 +127,25 @@ html[data-style="terminal"] .style-switch button[aria-pressed="true"] { backgrou
 
 /* ---------- 网格: 一个 gutter 值，横竖一致 ---------- */
 .grid-mid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap); align-items: stretch; margin-bottom: var(--gap); }
+/* 地图 + 当前目录列表 双栏（左地图右列表联动） */
+.grid-map { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap); align-items: stretch; margin-bottom: var(--gap); }
+.grid-map .panel { display: flex; flex-direction: column; min-width: 0; }
+.grid-map .panel .panel-body { flex: 1; min-height: 0; }
+.dirlist { display: grid; }
+.dir-row { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 7px 0; cursor: pointer; border-radius: 4px; }
+.dir-row:hover { background: var(--raised); }
+.dir-row + .dir-row { border-top: 1px solid var(--rule); }
+.dir-row .dname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.dir-row .dkb { flex: none; font-size: var(--fs-small); color: var(--muted); max-width: 12ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dir-row .dsize { flex: none; text-align: right; font-size: var(--fs-body); }
+.dir-row .dinfo { flex: none; width: 24px; height: 24px; border: 0; border-radius: 4px; background: none; color: var(--muted); cursor: pointer; font-size: var(--fs-small); }
+.dir-row .dinfo:hover { background: var(--active); color: var(--text); }
+
+/* 可清理项独立一行: 两列排布 */
+.clean-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
+.clean-grid .clean-row + .clean-row { border-top: 1px solid var(--rule); }
+@media (max-width: 1000px) { .clean-grid { grid-template-columns: 1fr; } }
+
 .grid-low { display: grid; grid-template-columns: 1fr 2fr; gap: var(--gap); align-items: stretch; }
 .grid-low .panel { display: flex; flex-direction: column; }
 .grid-low .panel #growth-chart { flex: 1; min-height: 240px; }
@@ -136,7 +155,7 @@ html[data-style="sheet"] .kpis { background: var(--surface); }
 
 /* phone: 导航折叠 */
 @media (max-width: 860px) {
-  .grid-mid, .grid-low { grid-template-columns: 1fr; }
+  .grid-map, .grid-mid, .grid-low { grid-template-columns: 1fr; }
   html[data-style="terminal"] .app,
   html[data-style="sheet"] .app { grid-template-columns: minmax(0, 1fr); }
   html[data-style="terminal"] .sidebar { position: fixed; inset: auto 0 0 0; height: auto; flex-direction: row; justify-content: space-around; padding: 6px 0; background: var(--surface); border-top: 1px solid var(--border); }
