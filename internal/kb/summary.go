@@ -49,10 +49,12 @@ func BuildCleanSummary(res *scanner.Result, minSize int64, maxEntries int) []Cle
 						}
 						agg[h.Entry.ID] = e
 					}
+					// 最顶层命中即按"含全部内容"计入，不再下钻——子目录大小已含在本目录内
 					e.TotalSize += n.Bytes
 					if len(e.Paths) < 6 {
 						e.Paths = append(e.Paths, CleanPath{Path: p, Size: n.Bytes, Files: n.Files})
 					}
+					return
 				}
 			}
 		}

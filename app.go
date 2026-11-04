@@ -167,8 +167,10 @@ func (a *App) StartScan(roots []string) error {
 		a.last = res
 		a.index = kb.BuildTreeIndex(res)
 		a.mu.Unlock()
-		if _, err := history.Save(res); err != nil {
-			a.emit("scan:error", "存档失败: "+err.Error())
+		if a.ctx != nil { // 测试模式（无生命周期 ctx）不落存档，避免污染历史
+			if _, err := history.Save(res); err != nil {
+				a.emit("scan:error", "存档失败: "+err.Error())
+			}
 		}
 		a.emit("scan:done", map[string]any{
 			"durationSec": res.Duration,
