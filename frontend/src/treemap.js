@@ -1,60 +1,65 @@
-// 盘镜 DiskLens — squarified treemap（§6 规则自绘 SVG: 方角、1px 描边、无渐变、悬停 1px accent 线）
-// 灵感与交互目标对齐 WinDirStat/ECharts treemap，实现零依赖。
+// 盘镜 DiskLens — squarified treemap（Bruls et al. 标准算法; §6 规则自绘 SVG:
+// 方角、1px 描边、无渐变、悬停 1px accent 线、面积足够才放标签）
+// 交互目标对齐 WinDirStat/ECharts treemap，实现零依赖。
 export function squarify(items, x, y, w, h) {
   // items: [{name, value}] 已按 value 降序; 返回 [{name, value, x, y, w, h}]
   const total = items.reduce((s, d) => s + d.value, 0);
   const scale = (w * h) / total;
   const rects = [];
-  let dx = x, dy = y, dw = w, dh = h;
-  let row = [], rowSum = 0;
-  const worst = (r, s) => {
-    const side = Math.min(dw, dh);
-    let max = 0, min = Infinity;
-    for (const it of r) {
-      const area = it.value * scale;
-      const len = area / (s * scale * side / side) || 0; // s 为行面积(已缩放)
-      const thickness = (s * scale) / side;
-      const other = area / thickness;
-      const ratio = Math.max(thickness / other, other / thickness);
-      if (ratio > max) max = ratio; if (ratio < min) min = ratio;
+  let rx = x, ry = y, rw = w, rh = h;
+  let row = [], rowArea = 0; // rowArea 为缩放后面积
+
+  function worst(r, area, sideLen) {
+    const thick = area / sideLen;
+    let bad = 0;
+    for (const t of r) {
+      const len = (t.value * scale) / thick;
+      const ratio = Math.max(thick / len, len / thick);
+      if (ratio > bad) bad = ratio;
     }
-    return max;
-  };
+    return bad;
+  }
+
   function layoutRow() {
-    const side = Math.min(dw, dh);
-    const thick = rowSum * scale / side;
+    const sideLen = Math.min(rw, rh);
+    const thick = rowArea / sideLen;
     let off = 0;
     for (const it of row) {
-      const len = it.value * scale / thick;
-      if (dw >= dh) rects.push({ ...it, x: dx, y: dy + off, w: thick, h: len });
-      else rects.push({ ...it, x: dx + off, y: dy, w: len, h: thick });
+      const len = (it.value * scale) / thick;
+      if (rw >= rh) rects.push({ ...it, x: rx, y: ry + off, w: thick, h: len });
+      else rects.push({ ...it, x: rx + off, y: ry, w: len, h: thick });
       off += len;
     }
-    if (dw >= dh) { dx += thick; dw -= thick; } else { dy += thick; dh -= thick; }
-    row = []; rowSum = 0;
+    if (rw >= rh) { rx += thick; rw -= thick; } else { ry += thick; rh -= thick; }
+    row = []; rowArea = 0;
   }
+
   for (const it of items) {
-    const cur = rowSum + it.value;
-    const side = Math.min(dw, dh);
-    const ratioNew = Math.max(side * side * cur / (cur * cur), cur * cur / (side * side * cur)) || Infinity;
-    const ratioOld = Math.max(side * side * rowSum / (rowSum * rowSum), rowSum * rowSum / (side * side * rowSum)) || Infinity;
-    if (row.length === 0 || ratioNew <= ratioOld) { row.push(it); rowSum = cur; }
-    else { layoutRow(); row.push(it); rowSum = it.value; }
+    const area = it.value * scale;
+    const sideLen = Math.min(rw, rh);
+    const withNew = row.length ? worst([...row, it], rowArea + area, sideLen) : Infinity;
+    if (row.length === 0 || withNew <= worst(row, rowArea, sideLen)) {
+      row.push(it); rowArea += area;
+    } else {
+      layoutRow();
+      row.push(it); rowArea = area;
+    }
   }
   if (row.length) layoutRow();
   return rects;
 }
 
 // 渲染到容器: theme ramp 由调用方传入（深/浅两套色阶，蓝/teal 同族阶梯）
-export function renderTreemap(el, items, { ramps, fmt, unit = 'GB' }) {
+export function renderTreemap(el, items, { ramps, fmt, unit = 'GB', height = null }) {
   const W = Math.max(320, el.clientWidth || 800);
-  const H = 360;
+  const H = Math.max(280, height || 360);
   const sorted = [...items].sort((a, b) => b.value - a.value);
   const rects = squarify(sorted, 0.5, 0.5, W - 1, H - 1);
   const n = ramps.length;
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
   svg.setAttribute('class', 'treemap-svg');
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'D 盘顶层目录占用方块地图');

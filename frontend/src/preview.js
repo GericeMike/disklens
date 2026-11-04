@@ -24,7 +24,8 @@ function renderDrives() {
     return `
       <div class="kpi">
         <div class="kpi-label">${d.label}</div>
-        <div class="kpi-value">${fmtGB(d.free)} <small>GB 可用 · ${pct}% 已用</small></div>
+        <div class="kpi-value">${fmtGB(d.free)} <small>GB 可用</small></div>
+        <div class="kpi-pct">${pct}% 已用</div>
         <div class="water">
           <div class="water-track">${ticks}<div class="water-fill${d.atRisk ? ' at-risk' : ''}" style="width:${pct}%"></div></div>
           <div class="water-ends mono">
@@ -41,9 +42,11 @@ function renderClean() {
   $('#clean-rows').innerHTML = cleanItems.map(i => `
     <div class="clean-row">
       ${badge[i.risk]}
-      <div class="cname">${i.name}</div>
+      <div class="cbody">
+        <div class="cname">${i.name}</div>
+        <div class="creason">${i.reason} · ${i.where}</div>
+      </div>
       <div class="csize num">${i.size.toFixed(1)} <small style="color:var(--muted)">GB</small></div>
-      <div class="creason">${i.reason} · ${i.where}</div>
     </div>`).join('');
 }
 
@@ -58,19 +61,25 @@ function renderTopFiles() {
 
 function renderGrowth() {
   const el = $('#growth-chart');
+  // 与同行表格卡对齐: 按实际可用高度绘制（行底边一致，§4.2）
+  const h = el.clientHeight > 240 ? el.clientHeight : 248;
   const res = Charts.diverging(el, {
     labels: growth.labels,
     up: growth.up,
     down: growth.down,
     above: '90 天增长 (GB)',
     below: '90 天释放 (GB)',
+    height: h,
     format: (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1),
   });
   if (res && res.legend) $('#growth-legend').innerHTML = '';
 }
 
 function renderTreemapNow() {
-  renderTreemap($('#treemap'), dTree, { ramps: RAMPS[currentStyle()], fmt: fmtGB });
+  // 卡片被同行卡片拉伸时按实际高度绘制，避免面板内留白（panel-void）
+  const box = $('#treemap');
+  const h = box.clientHeight > 320 ? box.clientHeight : 360;
+  renderTreemap(box, dTree, { ramps: RAMPS[currentStyle()], fmt: fmtGB, height: h });
 }
 
 function boot() {

@@ -1,0 +1,14 @@
+/* 盘镜 DiskLens — 自托管字体（零联网：正式 exe 内嵌，woff2 latin 子集）
+   家族: Public Sans / JetBrains Mono (terminal) · IBM Plex Sans / IBM Plex Mono (sheet)
+   CJK 回退系统字体（Microsoft YaHei UI / PingFang SC），正式版可选内嵌中文子集 */
+@font-face { font-family: "Public Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/public-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 500; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/public-sans-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/public-sans-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Public Sans"; font-weight: 700; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/public-sans-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/jetbrains-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 500; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/jetbrains-mono-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 400; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/ibm-plex-sans-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 500; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/ibm-plex-sans-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Sans"; font-weight: 600; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/ibm-plex-sans-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 400; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/ibm-plex-mono-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-style: normal; font-display: swap; src: url("../assets/fonts/cdn/ibm-plex-mono-latin-500-normal.woff2") format("woff2"); }

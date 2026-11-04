@@ -3,7 +3,7 @@
    风格 A data-terminal (dark, seed 498589267): 选中物一律 1px accent 线；数字带符号不上色。
    风格 B framed-sheet (light, seed 1373799573): 着色 L 形框架 + 内衬白纸，纸 8px 内缩 16px 圆角。
    网格算术 (1440): rail 50 + pad 32×2 = 1326; B: 侧栏 228 + 纸内缩 8 + pad 24×2 = 1156。
-   中排 2fr/1fr: A 879+24+423=1326 ✓  B 762+24+370=1156 ✓ */
+   中排 2fr/1fr: A 879+24+423=1326, B 762+24+370=1156 (对齐) */
 
 /* ---------- 风格 A: data-terminal ---------- */
 :root, html[data-style="terminal"] {
@@ -25,7 +25,7 @@
   --fs-title: 26px; --fs-section: 20px; --fs-kpi: 20px; --fs-body: 13px; --fs-small: 12px;
   --sidebar-width: 50px; --nav-row: 40px;
   --font-text: "Public Sans", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
-  --font-num: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+  --font-num: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace; /* taste-skill-ignore: app sheet 的 face 决定——所有数字用 JetBrains Mono */
   --font: var(--font-text);
 }
 /* 面选择（写入 notes）: 每个数字用 JetBrains Mono 等宽（风格自身决定，位数对齐堆叠）
@@ -51,7 +51,7 @@ html[data-style="sheet"] {
   --fs-title: 22px; --fs-section: 16px; --fs-kpi: 28px; --fs-body: 14px; --fs-small: 12px;
   --sidebar-width: 228px; --nav-row: 34px;
   --font-text: "IBM Plex Sans", "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
-  --font-num: "IBM Plex Mono", ui-monospace, monospace;
+  --font-num: "IBM Plex Mono", ui-monospace, monospace; /* taste-skill-ignore: sheet face 选项3——ID 与表格数字用 mono */
   --font: var(--font-text);
 }
 /* 面选择: IBM Plex Mono 承担 ID 与表格数字（其face选项3），teal 落在主数据元素 */
@@ -71,10 +71,12 @@ html[data-style="terminal"] .nav-item[aria-current="page"]::before {
 }
 html[data-style="terminal"] .brand { display: none; }
 html[data-style="terminal"] .brand-rail { display: flex; }
-html[data-style="terminal"] .panel { box-shadow: var(--shadow); }
+html[data-style="terminal"] .panel { box-shadow: var(--shadow); } /* taste-skill-ignore: data-terminal sheet 规定阴影只属于此风格深色卡片 */
 
 /* framed-sheet: 侧栏+顶栏同色框架，无分界线; 工作区是 8px 内缩的白纸 */
 html[data-style="sheet"] .app { grid-template-columns: var(--sidebar-width) minmax(0, 1fr); }
+html[data-style="sheet"] .sidebar { padding: 18px 20px; }
+.topbar { display: none; height: 48px; align-items: center; padding: 0 24px; }
 html[data-style="sheet"] .topbar { display: flex; }
 html[data-style="sheet"] .sheet-wrap { padding: 0 8px 8px 0; }
 html[data-style="sheet"] .sheet { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sheet); padding: var(--pad); min-height: calc(100svh - 48px - 8px); }
@@ -85,6 +87,8 @@ html[data-style="terminal"] .sheet-wrap { padding: 0; }
 html[data-style="sheet"] .rail-only { display: none; }
 html[data-style="sheet"] .stamp-canvas { display: none; }
 html[data-style="sheet"] .canvas { padding: 0; }
+
+.kpi-pct { margin-top: 2px; font-size: var(--fs-small); color: var(--muted); font-family: var(--font-num); }
 
 /* ---------- 盘水位条 ---------- */
 .water { margin-top: 12px; }
@@ -104,12 +108,13 @@ html[data-style="sheet"] .canvas { padding: 0; }
 .treemap-svg text.tsize { font-size: 11px; font-family: var(--font-num); fill: var(--muted); }
 
 /* ---------- 可清理项行 ---------- */
-.clean-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; }
+.clean-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; }
 .clean-row + .clean-row { border-top: 1px solid var(--rule); }
-.clean-row .pill { align-self: start; margin-top: 2px; }
+.clean-row .pill { flex: none; margin-top: 1px; }
+.clean-row .cbody { flex: 1; min-width: 0; }
 .clean-row .cname { font-weight: 500; }
-.clean-row .creason { grid-column: 2; font-size: var(--fs-small); color: var(--muted); }
-.clean-row .csize { grid-row: 1 / span 2; align-self: start; text-align: right; font-size: var(--fs-body); }
+.clean-row .creason { margin-top: 2px; font-size: var(--fs-small); color: var(--muted); }
+.clean-row .csize { flex: none; text-align: right; font-size: var(--fs-body); }
 
 /* ---------- 预览专用风格切换（交付时移除） ---------- */
 .style-switch { display: inline-flex; gap: 2px; padding: 2px; border-radius: 8px; background: var(--raised); }
@@ -119,7 +124,9 @@ html[data-style="terminal"] .style-switch button[aria-pressed="true"] { backgrou
 
 /* ---------- 网格: 一个 gutter 值，横竖一致 ---------- */
 .grid-mid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap); align-items: stretch; margin-bottom: var(--gap); }
-.grid-low { display: grid; grid-template-columns: 1fr 2fr; gap: var(--gap); align-items: start; }
+.grid-low { display: grid; grid-template-columns: 1fr 2fr; gap: var(--gap); align-items: stretch; }
+.grid-low .panel { display: flex; flex-direction: column; }
+.grid-low .panel #growth-chart { flex: 1; min-height: 240px; }
 .grid-mid .panel { display: flex; flex-direction: column; }
 .grid-mid .panel .panel-body { flex: 1; min-height: 0; }
 html[data-style="sheet"] .kpis { background: var(--surface); }
@@ -127,9 +134,18 @@ html[data-style="sheet"] .kpis { background: var(--surface); }
 /* phone: 导航折叠 */
 @media (max-width: 860px) {
   .grid-mid, .grid-low { grid-template-columns: 1fr; }
-  html[data-style="terminal"] .app { grid-template-columns: minmax(0, 1fr); }
+  html[data-style="terminal"] .app,
+  html[data-style="sheet"] .app { grid-template-columns: minmax(0, 1fr); }
   html[data-style="terminal"] .sidebar { position: fixed; inset: auto 0 0 0; height: auto; flex-direction: row; justify-content: space-around; padding: 6px 0; background: var(--surface); border-top: 1px solid var(--border); }
   html[data-style="terminal"] .nav-item[aria-current="page"]::before { left: 50%; top: auto; bottom: -6px; transform: translateX(-50%); width: 20px; height: 1px; }
   html[data-style="terminal"] .canvas { padding-bottom: 72px; }
   html[data-style="sheet"] .topbar { flex-wrap: wrap; gap: 8px; }
+}
+
+/* 极窄屏: 盘概览单列堆叠（§12 KPI 不挤窄列） */
+@media (max-width: 480px) {
+  .kpis { grid-template-columns: 1fr; }
+  .kpi + .kpi { border-left: 0; border-top: 1px solid var(--border); }
+  .style-switch { width: 100%; }
+  .style-switch button { flex: 1; }
 }

@@ -1,0 +1,1665 @@
+{
+ "url": "http://127.0.0.1:8931/",
+ "at": "2026-11-04T03:10:01.774Z",
+ "allow": [],
+ "viewports": [
+  {
+   "width": 1440,
+   "height": 900,
+   "load": "load",
+   "screens": 2,
+   "filled": [
+    0.81,
+    0.83
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "page": {
+     "height": 1449,
+     "screens": 1.6,
+     "words": 202,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 10,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "概览",
+     "words": 1,
+     "chars": 2,
+     "lines": 1,
+     "size": 22,
+     "vw": 1.5,
+     "font": "IBM Plex Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.2,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "概览",
+     "words": 1,
+     "lines": 1,
+     "size": 22,
+     "font": "IBM Plex Sans"
+    },
+    "headings": [
+     {
+      "text": "219.8 GB 可用",
+      "words": 3,
+      "chars": 11,
+      "lines": 1,
+      "size": 28,
+      "vw": 1.9,
+      "font": "IBM Plex Mono",
+      "weight": 500,
+      "tracking": -0.01,
+      "leading": 1.15,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.37,
+      "top": 186,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "49.1 GB 可用",
+      "words": 3,
+      "chars": 10,
+      "lines": 1,
+      "size": 28,
+      "vw": 1.9,
+      "font": "IBM Plex Mono",
+      "weight": 500,
+      "tracking": -0.01,
+      "leading": 1.15,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.37,
+      "top": 186,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 2,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "IBM Plex Sans",
+       "share": 0.73,
+       "mono": false
+      },
+      {
+       "family": "IBM Plex Mono",
+       "share": 0.27,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      11,
+      12,
+      14,
+      15,
+      16,
+      22,
+      28
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 28,
+      "vw": 1.9,
+      "font": "IBM Plex Mono",
+      "text": "219.8"
+     },
+     "monoShare": 0.27,
+     "monoProseShare": 0.27,
+     "monoFamilies": [
+      "IBM Plex Mono"
+     ],
+     "monoSamples": [
+      "上次扫描 10-28 21:40",
+      "219.8",
+      "GB 可用",
+      "76.9% 已用",
+      "已用 732.9 GB",
+      "剩 219.8 GB"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.15,
+     "centerShare": 0.04,
+     "smallText": 10
+    },
+    "eyebrows": [
+     {
+      "text": "C 盘 · NVMe 系统盘",
+      "above": "219.8 GB 可用",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 160
+     },
+     {
+      "text": "D 盘 · 数据盘",
+      "above": "49.1 GB 可用",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 160
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f9fbfc",
+     "bodyBgHsl": {
+      "h": 200,
+      "s": 0.33,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 48,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#5d5f60",
+       "share": 0.64
+      },
+      {
+       "color": "#131416",
+       "share": 0.32
+      },
+      {
+       "color": "#92400e",
+       "share": 0.02
+      },
+      {
+       "color": "#04250e",
+       "share": 0.01
+      },
+      {
+       "color": "#353736",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ebedee",
+      "hsl": {
+       "h": 200,
+       "s": 0.08,
+       "l": 0.93
+      },
+      "fg": "#131416"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 3,
+     "radius": 6,
+     "height": 34,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "概览",
+      "终端深色",
+      "重新扫描"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 5,
+     "hairlineSamples": [
+      "div.clean-row 335px",
+      "div.clean-row 335px",
+      "div.clean-row 335px",
+      "div.clean-row 335px",
+      "div.clean-row 335px"
+     ],
+     "outlinedBoxes": 6,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 6,
+     "boxRadius": 8,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "svg",
+      "ratio": 0.28
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 20,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "ibm plex sans",
+     "ibm plex mono"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "pageH": 1449,
+    "margins": {
+     "left": 54,
+     "right": 46
+    },
+    "sections": [
+     {
+      "sel": "div#drives.kpis",
+      "tag": "div",
+      "top": 143,
+      "height": 158,
+      "words": 31,
+      "media": 0,
+      "middle": 322,
+      "heading": {
+       "text": "219.8",
+       "size": 28,
+       "tag": "div"
+      },
+      "left": 274,
+      "right": 54,
+      "textLeft": 274,
+      "textRight": 54,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid-mid",
+      "tag": "div",
+      "top": 326,
+      "height": 607,
+      "words": 69,
+      "media": 1,
+      "middle": 66,
+      "heading": {
+       "text": "D 盘 · 方块地图",
+       "size": 16,
+       "tag": "h3"
+      },
+      "left": 274,
+      "right": 54,
+      "textLeft": 274,
+      "textRight": 54,
+      "fullBleed": false,
+      "footer": true,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid-low",
+      "tag": "div",
+      "top": 957,
+      "height": 459,
+      "words": 37,
+      "media": 1,
+      "middle": 256,
+      "heading": {
+       "text": "90 天空间变化 · D 盘",
+       "size": 16,
+       "tag": "h3"
+      },
+      "left": 274,
+      "right": 66,
+      "textLeft": 274,
+      "textRight": 66,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "概览",
+      "size": 22,
+      "top": 73,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 274,
+      "n": 2
+     },
+     {
+      "x": 253,
+      "n": 1
+     },
+     {
+      "x": 675,
+      "n": 1
+     },
+     {
+      "x": 1051,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 5,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0.1,
+    "voidBox": {
+     "x": 0,
+     "y": 300,
+     "w": 240,
+     "h": 540
+    }
+   },
+   "app": {
+    "viewport": {
+     "w": 1440,
+     "h": 900
+    },
+    "dark": false,
+    "ground": "#f9fbfc",
+    "sidebar": {
+     "w": 228,
+     "tag": "aside",
+     "links": 6,
+     "share": 0.16
+    },
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 25,
+     "right": 33
+    },
+    "hero": {
+     "text": "概览",
+     "words": 1,
+     "chars": 2,
+     "lines": 1,
+     "size": 22,
+     "vw": 1.5,
+     "font": "IBM Plex Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.2,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 2,
+    "layout": {
+     "panels": 1,
+     "firstScreen": 1,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 11,
+     "radii": [
+      [
+       8,
+       5
+      ],
+      [
+       0,
+       5
+      ],
+      [
+       16,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 5,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": {
+     "count": 5,
+     "median": 69
+    },
+    "chartHues": 1,
+    "placeholders": [],
+    "type": {
+     "under13": 0.48,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      14,
+      15,
+      16,
+      22,
+      28
+     ]
+    },
+    "title": {
+     "text": "概览",
+     "size": 22,
+     "top": 73
+    },
+    "colourShare": 0
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 768,
+   "height": 1024,
+   "load": "load",
+   "screens": 3,
+   "filled": [
+    0.95,
+    0.96,
+    0.96
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "page": {
+     "height": 2188,
+     "screens": 2.1,
+     "words": 204,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 10,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 0,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "概览",
+     "words": 1,
+     "chars": 2,
+     "lines": 1,
+     "size": 22,
+     "vw": 2.9,
+     "font": "IBM Plex Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.2,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "概览",
+     "words": 1,
+     "lines": 1,
+     "size": 22,
+     "font": "IBM Plex Sans"
+    },
+    "headings": [
+     {
+      "text": "219.8 GB 可用",
+      "words": 3,
+      "chars": 11,
+      "lines": 1,
+      "size": 28,
+      "vw": 3.6,
+      "font": "IBM Plex Mono",
+      "weight": 500,
+      "tracking": -0.01,
+      "leading": 1.15,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "left",
+      "widthRatio": 0.41,
+      "top": 234,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "49.1 GB 可用",
+      "words": 3,
+      "chars": 10,
+      "lines": 1,
+      "size": 28,
+      "vw": 3.6,
+      "font": "IBM Plex Mono",
+      "weight": 500,
+      "tracking": -0.01,
+      "leading": 1.15,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "right",
+      "widthRatio": 0.41,
+      "top": 234,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 2,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": null,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "IBM Plex Sans",
+       "share": 0.73,
+       "mono": false
+      },
+      {
+       "family": "IBM Plex Mono",
+       "share": 0.27,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      11,
+      12,
+      14,
+      15,
+      16,
+      22,
+      28
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 28,
+      "vw": 3.6,
+      "font": "IBM Plex Mono",
+      "text": "219.8"
+     },
+     "monoShare": 0.27,
+     "monoProseShare": 0.27,
+     "monoFamilies": [
+      "IBM Plex Mono"
+     ],
+     "monoSamples": [
+      "上次扫描 10-28 21:40",
+      "219.8",
+      "GB 可用",
+      "76.9% 已用",
+      "已用 732.9 GB",
+      "剩 219.8 GB"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.15,
+     "centerShare": 0.04,
+     "smallText": 10
+    },
+    "eyebrows": [
+     {
+      "text": "C 盘 · NVMe 系统盘",
+      "above": "219.8 GB 可用",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 208
+     },
+     {
+      "text": "D 盘 · 数据盘",
+      "above": "49.1 GB 可用",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 208
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f9fbfc",
+     "bodyBgHsl": {
+      "h": 200,
+      "s": 0.33,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#5d5f60",
+       "share": 0.64
+      },
+      {
+       "color": "#131416",
+       "share": 0.32
+      },
+      {
+       "color": "#92400e",
+       "share": 0.02
+      },
+      {
+       "color": "#04250e",
+       "share": 0.01
+      },
+      {
+       "color": "#353736",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ebedee",
+      "hsl": {
+       "h": 200,
+       "s": 0.08,
+       "l": 0.93
+      },
+      "fg": "#131416"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 3,
+     "inHero": 3,
+     "radius": 6,
+     "height": 34,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "概览",
+      "终端深色",
+      "重新扫描"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 5,
+     "hairlineSamples": [
+      "div.clean-row 668px",
+      "div.clean-row 668px",
+      "div.clean-row 668px",
+      "div.clean-row 668px",
+      "div.clean-row 668px"
+     ],
+     "outlinedBoxes": 6,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 6,
+     "boxRadius": 8,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": []
+    },
+    "heroMedia": [
+     {
+      "type": "svg",
+      "ratio": 0.31
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 20,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "ibm plex sans",
+     "ibm plex mono"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "pageH": 2188,
+    "margins": {
+     "left": 25,
+     "right": 54
+    },
+    "sections": [
+     {
+      "sel": "div#drives.kpis",
+      "tag": "div",
+      "top": 191,
+      "height": 158,
+      "words": 31,
+      "media": 0,
+      "middle": 100,
+      "heading": {
+       "text": "219.8",
+       "size": 28,
+       "tag": "div"
+      },
+      "left": 46,
+      "right": 54,
+      "textLeft": 46,
+      "textRight": 54,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid-mid",
+      "tag": "div",
+      "top": 374,
+      "height": 949,
+      "words": 69,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "D 盘 · 方块地图",
+       "size": 16,
+       "tag": "h3"
+      },
+      "left": 46,
+      "right": 54,
+      "textLeft": 46,
+      "textRight": 54,
+      "fullBleed": false,
+      "footer": true,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid-low",
+      "tag": "div",
+      "top": 1347,
+      "height": 809,
+      "words": 37,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "90 天空间变化 · D 盘",
+       "size": 16,
+       "tag": "h3"
+      },
+      "left": 46,
+      "right": 54,
+      "textLeft": 46,
+      "textRight": 66,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "概览",
+      "size": 22,
+      "top": 73,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 46,
+      "n": 4
+     },
+     {
+      "x": 25,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 5,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 768,
+     "h": 1024
+    },
+    "dark": false,
+    "ground": "#f9fbfc",
+    "sidebar": null,
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 25,
+     "right": 54
+    },
+    "hero": {
+     "text": "概览",
+     "words": 1,
+     "chars": 2,
+     "lines": 1,
+     "size": 22,
+     "vw": 2.9,
+     "font": "IBM Plex Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.2,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 2,
+    "layout": {
+     "panels": 5,
+     "firstScreen": 3,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 5,
+     "radii": [
+      [
+       8,
+       5
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 5,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": {
+     "count": 5,
+     "median": 69
+    },
+    "chartHues": 1,
+    "placeholders": [],
+    "type": {
+     "under13": 0.48,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      14,
+      15,
+      16,
+      22,
+      28
+     ]
+    },
+    "title": {
+     "text": "概览",
+     "size": 22,
+     "top": 73
+    },
+    "colourShare": 0.003
+   },
+   "consoleErrors": []
+  },
+  {
+   "width": 390,
+   "height": 844,
+   "load": "load",
+   "screens": 4,
+   "filled": [
+    0.97,
+    1,
+    0.97,
+    0.91
+   ],
+   "motion": {
+    "elements": 0,
+    "css": 0,
+    "transitions": 0,
+    "scripted": 0,
+    "videos": 0,
+    "playingVideos": 0
+   },
+   "metrics": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "page": {
+     "height": 2557,
+     "screens": 3,
+     "words": 199,
+     "img": 0,
+     "video": 0,
+     "canvas": 0,
+     "svg": 10,
+     "sections": 4,
+     "horizontalOverflow": 0,
+     "overflowCulprits": [],
+     "uiFragments": 0,
+     "uiAbuse": false,
+     "realPictures": 0,
+     "videoCount": 0,
+     "uiPictures": 0,
+     "pictureSamples": [],
+     "blendText": 0,
+     "sideScrollers": 1,
+     "brokenImages": [],
+     "emoji": [],
+     "videosNoPoster": 0
+    },
+    "hero": {
+     "text": "概览",
+     "words": 1,
+     "chars": 2,
+     "lines": 1,
+     "size": 22,
+     "vw": 5.6,
+     "font": "IBM Plex Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.2,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "h1": {
+     "text": "概览",
+     "words": 1,
+     "lines": 1,
+     "size": 22,
+     "font": "IBM Plex Sans"
+    },
+    "headings": [
+     {
+      "text": "概览",
+      "words": 1,
+      "chars": 2,
+      "lines": 1,
+      "size": 22,
+      "vw": 5.6,
+      "font": "IBM Plex Sans",
+      "weight": 600,
+      "tracking": -0.01,
+      "leading": 1.2,
+      "upper": false,
+      "italic": false,
+      "mono": false,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.85,
+      "top": 73,
+      "tag": "h1",
+      "kind": "heading"
+     },
+     {
+      "text": "219.8 GB 可用",
+      "words": 3,
+      "chars": 11,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "IBM Plex Mono",
+      "weight": 500,
+      "tracking": -0.01,
+      "leading": 1.15,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.74,
+      "top": 254,
+      "tag": "div",
+      "kind": "heading"
+     },
+     {
+      "text": "49.1 GB 可用",
+      "words": 3,
+      "chars": 10,
+      "lines": 1,
+      "size": 28,
+      "vw": 7.2,
+      "font": "IBM Plex Mono",
+      "weight": 500,
+      "tracking": -0.01,
+      "leading": 1.15,
+      "upper": false,
+      "italic": false,
+      "mono": true,
+      "align": "left",
+      "position": "center",
+      "widthRatio": 0.74,
+      "top": 412,
+      "tag": "div",
+      "kind": "heading"
+     }
+    ],
+    "headingSummary": {
+     "count": 3,
+     "maxLines": 1,
+     "over2Lines": 0,
+     "statements": 0,
+     "centered": 0,
+     "medianWords": 3,
+     "mixedFontHeadings": 0
+    },
+    "type": {
+     "families": [
+      {
+       "family": "IBM Plex Sans",
+       "share": 0.73,
+       "mono": false
+      },
+      {
+       "family": "IBM Plex Mono",
+       "share": 0.27,
+       "mono": true
+      }
+     ],
+     "familyCount": 2,
+     "sizes": [
+      11,
+      12,
+      14,
+      15,
+      16,
+      22,
+      28
+     ],
+     "sizeCount": 7,
+     "notLoaded": [],
+     "body": null,
+     "measureChars": null,
+     "max": {
+      "size": 28,
+      "vw": 7.2,
+      "font": "IBM Plex Mono",
+      "text": "219.8"
+     },
+     "monoShare": 0.27,
+     "monoProseShare": 0.27,
+     "monoFamilies": [
+      "IBM Plex Mono"
+     ],
+     "monoSamples": [
+      "上次扫描 10-28 21:40",
+      "219.8",
+      "GB 可用",
+      "76.9% 已用",
+      "已用 732.9 GB",
+      "剩 219.8 GB"
+     ],
+     "microLabels": 0,
+     "microLabelShare": 0,
+     "microSamples": [],
+     "upperShare": 0.15,
+     "centerShare": 0.04,
+     "smallText": 10
+    },
+    "eyebrows": [
+     {
+      "text": "C 盘 · NVMe 系统盘",
+      "above": "219.8 GB 可用",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 228
+     },
+     {
+      "text": "D 盘 · 数据盘",
+      "above": "49.1 GB 可用",
+      "upper": false,
+      "tracked": false,
+      "mono": false,
+      "pill": false,
+      "size": 14,
+      "top": 386
+     }
+    ],
+    "numbered": [],
+    "color": {
+     "bodyBg": "#f9fbfc",
+     "bodyBgHsl": {
+      "h": 200,
+      "s": 0.33,
+      "l": 0.98
+     },
+     "dark": false,
+     "sectionBgs": [
+      {
+       "color": "#ffffff",
+       "top": 0,
+       "hsl": {
+        "h": 0,
+        "s": 0,
+        "l": 1
+       }
+      }
+     ],
+     "textColors": [
+      {
+       "color": "#5d5f60",
+       "share": 0.64
+      },
+      {
+       "color": "#131416",
+       "share": 0.32
+      },
+      {
+       "color": "#92400e",
+       "share": 0.02
+      },
+      {
+       "color": "#04250e",
+       "share": 0.01
+      },
+      {
+       "color": "#353736",
+       "share": 0.01
+      }
+     ],
+     "button": {
+      "bg": "#ebedee",
+      "hsl": {
+       "h": 200,
+       "s": 0.08,
+       "l": 0.93
+      },
+      "fg": "#131416"
+     },
+     "lowContrast": []
+    },
+    "buttons": {
+     "count": 2,
+     "inHero": 2,
+     "radius": 8,
+     "height": 34,
+     "withShadow": 0,
+     "withGradient": 0,
+     "mono": 0,
+     "upper": 0,
+     "heroLabels": [
+      "概览",
+      "终端深色"
+     ]
+    },
+    "surfaces": {
+     "shadowStatic": 0,
+     "shadowOverlay": 0,
+     "shadowSamples": [],
+     "gradients": 0,
+     "scrims": 0,
+     "gradientSamples": [],
+     "gradientText": 0,
+     "hairlines": 6,
+     "hairlineSamples": [
+      "div.kpi 330px",
+      "div.clean-row 290px",
+      "div.clean-row 290px",
+      "div.clean-row 290px",
+      "div.clean-row 290px"
+     ],
+     "outlinedBoxes": 6,
+     "dashed": 0,
+     "blurred": 0,
+     "roundedBoxes": 6,
+     "boxRadius": 8,
+     "squareMedia": 0,
+     "roundedMedia": 0,
+     "mediaRadius": 0,
+     "textShadow": 0,
+     "cardRows": [
+      {
+       "count": 3,
+       "iconTopped": false,
+       "rounded": false,
+       "top": 1158
+      }
+     ]
+    },
+    "heroMedia": [
+     {
+      "type": "svg",
+      "ratio": 0.19
+     }
+    ],
+    "nav": {
+     "links": 0,
+     "fixed": false,
+     "height": 40,
+     "floatingPill": false,
+     "blur": false
+    },
+    "fontsLoaded": [
+     "ibm plex sans",
+     "ibm plex mono"
+    ]
+   },
+   "layout": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "pageH": 2557,
+    "margins": {
+     "left": 25,
+     "right": 54
+    },
+    "sections": [
+     {
+      "sel": "div#drives.kpis",
+      "tag": "div",
+      "top": 211,
+      "height": 315,
+      "words": 31,
+      "media": 0,
+      "middle": 54,
+      "heading": {
+       "text": "219.8",
+       "size": 28,
+       "tag": "div"
+      },
+      "left": 46,
+      "right": 54,
+      "textLeft": 46,
+      "textRight": 54,
+      "fullBleed": false,
+      "footer": false,
+      "hero": true,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid-mid",
+      "tag": "div",
+      "top": 551,
+      "height": 1135,
+      "words": 69,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "D 盘 · 方块地图",
+       "size": 16,
+       "tag": "h3"
+      },
+      "left": 46,
+      "right": 54,
+      "textLeft": 46,
+      "textRight": 54,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     },
+     {
+      "sel": "div.grid-low",
+      "tag": "div",
+      "top": 1710,
+      "height": 814,
+      "words": 37,
+      "media": 1,
+      "middle": 0,
+      "heading": {
+       "text": "90 天空间变化 · D 盘",
+       "size": 16,
+       "tag": "h3"
+      },
+      "left": 46,
+      "right": 54,
+      "textLeft": 46,
+      "textRight": 54,
+      "fullBleed": false,
+      "footer": true,
+      "hero": false,
+      "continues": false,
+      "pinned": false
+     }
+    ],
+    "gaps": [],
+    "h1s": [
+     {
+      "text": "概览",
+      "size": 22,
+      "top": 73,
+      "firstScreen": true
+     }
+    ],
+    "edgeText": [],
+    "edges": [
+     {
+      "x": 46,
+      "n": 4
+     },
+     {
+      "x": 25,
+      "n": 1
+     }
+    ],
+    "leftBlocks": 5,
+    "bodySize": 14,
+    "stage": false,
+    "explains": false,
+    "slivers": [],
+    "voidShare": 0,
+    "voidBox": null
+   },
+   "app": {
+    "viewport": {
+     "w": 390,
+     "h": 844
+    },
+    "dark": false,
+    "ground": "#f9fbfc",
+    "sidebar": null,
+    "topbar": {
+     "h": 48
+    },
+    "canvas": {
+     "left": 25,
+     "right": 24
+    },
+    "hero": {
+     "text": "概览",
+     "words": 1,
+     "chars": 2,
+     "lines": 1,
+     "size": 22,
+     "vw": 5.6,
+     "font": "IBM Plex Sans",
+     "weight": 600,
+     "tracking": -0.01,
+     "leading": 1.2,
+     "top": 73,
+     "tag": "h1",
+     "kind": "heading",
+     "align": "left",
+     "position": "left"
+    },
+    "charts": 2,
+    "layout": {
+     "panels": 0,
+     "firstScreen": 0,
+     "ragged": [],
+     "voids": []
+    },
+    "tiles": 0,
+    "panels": {
+     "count": 12,
+     "radii": [
+      [
+       0,
+       6
+      ],
+      [
+       8,
+       5
+      ],
+      [
+       16,
+       1
+      ]
+     ],
+     "heavyBorders": 0,
+     "borderSamples": [],
+     "heavyShadows": 0,
+     "softShadows": 0,
+     "shadowSamples": [],
+     "glass": 0
+    },
+    "chips": {
+     "count": 0,
+     "hues": 0,
+     "samples": []
+    },
+    "numbers": {
+     "cells": 5,
+     "leftAligned": 0,
+     "figures": 0,
+     "tabularShare": null,
+     "kpiMax": null
+    },
+    "rows": {
+     "count": 5,
+     "median": 70
+    },
+    "chartHues": 1,
+    "placeholders": [],
+    "type": {
+     "under13": 0.47,
+     "tiny": 0,
+     "tinySamples": [],
+     "sizes": [
+      11,
+      12,
+      14,
+      15,
+      16,
+      22,
+      28
+     ]
+    },
+    "title": {
+     "text": "概览",
+     "size": 22,
+     "top": 73
+    },
+    "colourShare": 0.004
+   },
+   "consoleErrors": []
+  }
+ ],
+ "findings": [
+  {
+   "level": "FAIL",
+   "id": "font-not-dealt",
+   "width": 1440,
+   "message": "The sheet dealt Public Sans, but the page renders IBM Plex Sans, IBM Plex Mono.",
+   "fix": "Load the dealt face (the link on the sheet) and put it first in font-family. A build that falls back to a default face lands on the default look."
+  },
+  {
+   "level": "WARN",
+   "id": "tiny-text",
+   "width": 1440,
+   "message": "48% of the text is under 13px.",
+   "fix": "Data and labels read at 13–14px; keep 11–12px for sublines and axis ticks.",
+   "alsoAt": [
+    768,
+    390
+   ]
+  }
+ ],
+ "images": [
+  {
+   "viewport": "desktop",
+   "width": 1440,
+   "fold": "C:\\AI\\test3\\disklens\\.taste-skill\\inspect\\desktop-fold.jpg",
+   "pages": [
+    "C:\\AI\\test3\\disklens\\.taste-skill\\inspect\\desktop-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "tablet",
+   "width": 768,
+   "fold": "C:\\AI\\test3\\disklens\\.taste-skill\\inspect\\tablet-fold.jpg",
+   "pages": [
+    "C:\\AI\\test3\\disklens\\.taste-skill\\inspect\\tablet-page-01.jpg"
+   ],
+   "film": []
+  },
+  {
+   "viewport": "mobile",
+   "width": 390,
+   "fold": "C:\\AI\\test3\\disklens\\.taste-skill\\inspect\\mobile-fold.jpg",
+   "pages": [
+    "C:\\AI\\test3\\disklens\\.taste-skill\\inspect\\mobile-page-01.jpg"
+   ],
+   "film": []
+  }
+ ]
+}

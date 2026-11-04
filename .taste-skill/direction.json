@@ -1,8 +1,8 @@
 {
  "version": 1,
  "kind": "app",
- "at": "2026-11-04T02:40:52.170Z",
- "seed": 1373799573,
+ "at": "2026-11-04T02:59:18.113Z",
+ "seed": 1094956411,
  "input": {
   "kind": "devtools",
   "brief": "盘镜 DiskLens - Windows 磁盘空间分析器:各盘占用概览、大文件夹treemap、可清理项清单、扫描历史增长对比",
@@ -11,132 +11,123 @@
    "overview"
   ],
   "keep": [],
-  "style": "framed-sheet"
+  "style": "data-terminal"
  },
  "style": {
-  "id": "framed-sheet",
-  "name": "Framed sheet",
-  "theme": "light",
-  "basis": "6 screens: a developer platform overview, an analytics overview, an events analytics tab, a list detail, a reports dashboard, a flow builder",
+  "id": "data-terminal",
+  "name": "Data terminal",
+  "theme": "dark",
+  "basis": "1 screen: a stock research view. Keep it narrow.",
   "suits": [
-   "analytics",
-   "devtools",
-   "builder",
-   "smb-admin",
-   "support",
-   "commerce",
-   "report"
+   "markets",
+   "devtools"
   ],
-  "idea": "The app chrome is one tinted L-shaped frame; the work sits on a white sheet with a hairline edge and soft corners, so depth comes from a single tone step and no shadow.",
-  "colourBudget": "under 3%; the brand shrinks to the logo and a 2px tab underline, the data carries the chroma",
+  "idea": "A research or monitoring screen read in long sessions: cards darker than the ground, tabular digits that stack, signs instead of colour, and every selection marked by the same 1px accent line.",
+  "colourBudget": "under 3%; the accent is never more than a 1px line",
   "tokens": {
-   "ground": "#f9fbfc",
-   "surface": "#ffffff",
-   "raised": "#f4f6f8",
-   "active": "#ebedee",
-   "border": "#e8eaec",
-   "rule": "#f0f1f2",
-   "control": "#cdced1",
-   "text": "#131416",
-   "muted": "#5d5f60",
-   "accent": "#1b6c80",
-   "positive": "#1e7b4f",
-   "negative": "#c4242a",
-   "warning": "#92400e",
+   "ground": "#171719",
+   "surface": "#131217",
+   "raised": "#212023",
+   "border": "#222224",
+   "rule": "#1b1a1f",
+   "control": "#3a3a3e",
+   "text": "#ffffff",
+   "muted": "#8a8c92",
+   "accent": "#4a8ad6",
+   "positive": "#44a282",
+   "negative": "#e5566f",
+   "warning": "#d9a441",
    "chart": [
-    "#1b6c80",
-    "#2f70bb",
-    "#a86f0c"
+    "#f2f2f3",
+    "#e5566f",
+    "#4a8ad6"
    ],
    "pills": {
     "positive": [
-     "#dcfae5",
-     "#04250e"
+     "#1b2828",
+     "#5fc39c"
     ],
     "negative": [
-     "#ffedea",
-     "#831c1e"
+     "#2c1a20",
+     "#e5566f"
     ],
     "warning": [
-     "#fffbeb",
-     "#92400e"
+     "#2a2416",
+     "#d9a441"
     ],
     "neutral": [
-     "#ebedee",
-     "#353736"
+     "#212023",
+     "#bdbdc0"
     ]
    },
+   "shadow": "0 12px 28px rgba(0,0,0,.2)",
    "radius": {
-    "card": 8,
-    "control": 6,
-    "sheet": 16
+    "card": 6,
+    "control": 999
    },
-   "sheetInset": 8,
    "font": {
-    "family": "IBM Plex Sans",
-    "second": "IBM Plex Mono, for IDs and keys only",
+    "family": "Public Sans",
+    "second": null,
     "fallback": "Inter, system-ui, sans-serif",
     "sizes": {
-     "title": 22,
-     "section": 16,
-     "kpi": 28,
-     "body": 14,
+     "title": 26,
+     "section": 20,
+     "kpi": 20,
+     "body": 13,
      "small": 12
     },
     "weights": [
      400,
      500,
-     600
+     600,
+     700
     ],
-    "note": "KPI values at 400; the semibold goes on the label and the active tab."
+    "note": "Section titles 20/400 in the muted grey; card titles 16/600; tabular figures everywhere."
    },
-   "density": "medium",
-   "rowHeight": 48,
-   "sidebarWidth": 228,
+   "density": "dense",
+   "rowHeight": 42,
+   "sidebarWidth": 50,
    "gap": 24,
-   "pad": 24,
-   "controlHeight": 32
+   "pad": 32,
+   "controlHeight": 34
   },
-  "shell": "framed-sheet",
+  "shell": "icon-rail",
   "shellAlternatives": [],
-  "signature": "One tinted frame holds the sidebar and the 48px top bar with no rule between them; the page is a white sheet inset 8px from the window's right and bottom edges, with a 1px edge, 16px corners and no shadow. The active tab is a 2px underline in ink or the accent; everything else in the chrome is grey.",
+  "signature": "Every selection (tab, toggle, range, nav item) is a 1px accent line exactly as wide as its label, placed on the nearest existing edge; numbers stay white or grey and carry their sign in the text ('+$24,000,000').",
   "identity": [
-   "The frame tinted from the product's colour in place of #f9fbfc: one low-chroma step of its hue (a green-grey for a climate or farm tool, a blue-grey for an observability tool, a stone for a print shop). The sheet stays white.",
-   "The brand's own hue from the brief as --chart-1 in place of the dealt teal, on the main series and the one selected state, at 3:1 or more on white, never violet or indigo.",
-   "IBM Plex Mono for IDs, keys and the figures in tables (one job): its figures have their own drawing, and a developer reads them as the product's."
+   "Every figure in a monospace as the style's decision (IBM Plex Mono or JetBrains Mono for each price, count and time, digits that stack), with the text in Public Sans. Lint and the inspector flag mono; give the reason in the report.",
+   "The one accent line from the product's world in place of the dealt blue (the exchange's or the team's hue): still the only selection mark, never violet or indigo.",
+   "A signature of the market or the system as the lead: an order book's depth as two mirrored bar lists, an incident as a minute-by-minute strip, a region map with the list beside it."
   ],
   "avoid": [
-   "a border between the sidebar and the top bar",
-   "a shadow under the sheet",
-   "cards whose border is heavier than the sheet's (#cdcfcf on cards read as heavy in the study)",
-   "a fourth nesting level: frame, sheet and card are enough",
-   "different gutters for the KPI row and the chart row (20 against 24 was flagged)"
+   "filled pill tabs or a coloured segmented control",
+   "a chart with no scale and no dates (the studied screen had none and was flagged)",
+   "tertiary text under 4.5:1 (#4c4c4f read at about 2:1 in the study)",
+   "lighter cards with borders and a glow",
+   "green and red on every number; the one column whose job is \"what moved today\" and a negative headline figure may carry the polarity colours"
   ],
-  "notes": "The study's second data hue in this style was an orange (#e88e46) that falls inside the house terracotta range; the third chart colour here is an amber moved out of that range and darkened to 3:1 on white."
+  "notes": "The studied screen's muted grey #82848a and red #d4405d were lifted to #8a8c92 and #e5566f so text passes 4.5:1 on the card. Its card list rows sit on a 28px pitch and its table rows on 42px."
  },
  "shell": {
-  "id": "framed-sheet",
-  "name": "Tinted frame, white sheet",
-  "basis": "8 of 23 screens, in three variants",
+  "id": "icon-rail",
+  "name": "Icon rail",
+  "basis": "3 of 23 screens",
   "suits": [
-   "analytics",
+   "markets",
    "devtools",
-   "builder",
-   "smb-admin",
-   "support"
+   "finance",
+   "wallet"
   ],
   "numbers": {
-   "chrome": "#f6f6f6-#f9fbfc (a warm #f7f6f2 once)",
-   "sheetInset": "8px from the window's right and bottom edges (12 and 16 once each)",
-   "sheetRadius": "10-16, median 16",
-   "sheetEdge": "1px #eaeaea-#ededed, no shadow",
-   "sidebarWidth": "220-263 (228 on two screens)",
-   "topBar": "48px on the chrome ground with no rule; search 548x32 centred on the window with a shortcut hint",
-   "contentPadding": 24,
-   "floatingVariant": "both panels inset 12px with a 12px gutter, radius 10"
+   "railWidth": "50-60, median 55",
+   "icon": "15-18px outline",
+   "pitch": "34-49",
+   "active": "icon colour alone, or a full-bleed 50px band at a 2% tint, or a 1px accent bar on the rail's border",
+   "groups": "short 20px hairlines, no labels",
+   "utilities": "pushed to the bottom after a gap of about 200px"
   },
-  "blueprint": "Sidebar and top bar share one tinted ground with no rule between them, forming an L; the page lives on a white sheet. Variant one: the sheet butts against the sidebar and the top bar and is inset 8px from the right and bottom edges, 16px radius, 1px edge. Variant two: a flush L-frame with no inset, the frame marked by one rule. Variant three: sidebar and content are two floating panels inset 12px from every edge with a 12px gutter. The top bar, when present, is 48px and holds a centred search, the account button and a help or AI icon. Inside the sheet the content has 24px padding and starts with the breadcrumb or title row.",
-  "phone": "The frame disappears: the sheet becomes the screen, with a 48px top bar (menu button, title, one action) on the chrome tint. The search moves into the menu sheet or behind an icon."
+  "blueprint": "An unlabelled rail of 50-60px carries the brand mark at the top and 15-18px outline icons on a 34-49px pitch; groups are split by 20px hairlines, utilities sit at the bottom. The rail sits on the page ground with a 1px edge, or is white with a faint 4px shadow on a grey ground. It saves about 180px of width against a labelled sidebar, so it suits products with few destinations and screens that need the width. Icons need tooltips and an accessible name.",
+  "phone": "The rail becomes a bottom bar with the same four or five icons, each with a short label under it."
  },
  "screens": [
   {
