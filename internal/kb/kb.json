@@ -1,0 +1,955 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "win-root", "name": "Windows 系统本体", "cat": "系统与内核", "risk": "danger",
+      "desc": "Windows 操作系统本体目录，内核、驱动、系统组件全在这里",
+      "why": "删除任何内容都可能导致系统无法启动或组件损坏，系统瘦身请用磁盘清理和 DISM，不要手动删",
+      "paths": ["%SystemRoot%"],
+      "clean": [
+        {"sub": "SoftwareDistribution/Download", "risk": "safe", "note": "Windows 更新下载缓存，停止 wuauserv 服务后可清空"},
+        {"sub": "Temp", "risk": "safe", "note": "系统临时文件，正在使用的会自动跳过"}
+      ]
+    },
+    {
+      "id": "win-winsxs", "name": "WinSxS 组件存储", "cat": "系统与内核", "risk": "danger",
+      "desc": "Windows 组件存储，保存系统文件的全部版本备份，是系统更新和修复的基础",
+      "why": "看着大但不能手删；正确瘦身方式：管理员运行 Dism /Online /Cleanup-Image /StartComponentCleanup",
+      "paths": ["%SystemRoot%/WinSxS"]
+    },
+    {
+      "id": "win-installer", "name": "Windows Installer 缓存", "cat": "系统与内核", "risk": "danger",
+      "desc": "所有 MSI 安装包的缓存副本，卸载/修复/更新软件时必须用到",
+      "why": "删了之后对应软件将无法卸载、修复或更新。想瘦身需用 PatchCleaner 之类工具甄别孤儿包",
+      "paths": ["%SystemRoot%/Installer"]
+    },
+    {
+      "id": "win-software-dist", "name": "Windows 更新缓存", "cat": "系统与内核", "risk": "caution",
+      "desc": "Windows Update 的更新包下载与数据库",
+      "why": "Download 子目录可清（先停 wuauserv 服务再删，删完重启服务）；整个目录删除会导致更新异常",
+      "paths": ["%SystemRoot%/SoftwareDistribution"],
+      "clean": [{"sub": "Download", "risk": "safe", "note": "已下载的更新包缓存"}]
+    },
+    {
+      "id": "win-temp", "name": "系统临时文件", "cat": "系统与内核", "risk": "safe",
+      "desc": "系统和安装程序留下的临时文件",
+      "why": "正常情况可全部清理；被占用的文件删不掉跳过即可",
+      "paths": ["%SystemRoot%/Temp"]
+    },
+    {
+      "id": "win-prefetch", "name": "预读取缓存", "cat": "系统与内核", "risk": "caution",
+      "desc": "Windows 记录常用程序的启动轨迹以加快下次启动",
+      "why": "可清空，但清后前几次启动程序会略慢，系统会自动重建",
+      "paths": ["%SystemRoot%/Prefetch"]
+    },
+    {
+      "id": "win-logs", "name": "系统日志", "cat": "系统与内核", "risk": "caution",
+      "desc": "CBS、DISM、Windows Update 等系统日志",
+      "why": "CBS.log 有时可涨到数 GB；可用磁盘清理的「Windows 更新清理」回收，不建议直接删文件",
+      "paths": ["%SystemRoot%/Logs"]
+    },
+    {
+      "id": "win-dumps", "name": "崩溃转储文件", "cat": "系统与内核", "risk": "caution",
+      "desc": "系统崩溃/蓝屏时的内存转储（MEMORY.DMP、Minidump、LiveKernelReports）",
+      "why": "排查蓝屏原因时有价值（可用 WinDbg 分析），日常是死重量，确认不需要分析可删",
+      "paths": ["%SystemRoot%/LiveKernelReports", "%SystemRoot%/Minidump", "%SystemRoot%/MEMORY.DMP"]
+    },
+    {
+      "id": "win-driverstore", "name": "驱动仓库", "cat": "驱动与硬件", "risk": "danger",
+      "desc": "Windows 驱动程序仓库，所有已安装驱动的历史版本",
+      "why": "旧版本驱动会积累几个 GB，但必须用 pnputil 或 DriverStore Explorer 清理，手删会导致设备异常",
+      "paths": ["%SystemRoot%/System32/DriverStore"]
+    },
+    {
+      "id": "win-fonts", "name": "系统字体", "cat": "系统与内核", "risk": "danger",
+      "desc": "系统字体库",
+      "why": "删错字体可能导致界面乱码，通过字体管理卸载自装字体即可",
+      "paths": ["%SystemRoot%/Fonts"]
+    },
+    {
+      "id": "win-boot", "name": "系统引导分区内容", "cat": "系统与内核", "risk": "danger",
+      "desc": "Windows 启动引导文件",
+      "why": "删除后电脑无法开机，绝对禁区",
+      "paths": ["C:/Boot"]
+    },
+    {
+      "id": "win-svi", "name": "系统还原点", "cat": "系统与内核", "risk": "danger",
+      "desc": "System Volume Information，系统还原点和卷影副本存这里",
+      "why": "想回收空间请用「系统属性→系统保护→配置」调整还原点占用，不能手动删",
+      "paths": ["*/System Volume Information"]
+    },
+    {
+      "id": "win-recycle", "name": "回收站本体", "cat": "系统与内核", "risk": "caution",
+      "desc": "$Recycle.Bin 是回收站的真实存储位置",
+      "why": "清空回收站走「回收站→清空」，不要直接删这个目录；每个盘各有一份",
+      "paths": ["*/$Recycle.Bin"]
+    },
+    {
+      "id": "win-pagefile", "name": "虚拟内存文件", "cat": "系统与内核", "risk": "info",
+      "desc": "pagefile.sys 是虚拟内存（页面文件），内存不够时系统用它顶",
+      "why": "不能直接删；想缩小：系统属性→高级→性能→虚拟内存里调小或移到其他盘",
+      "paths": ["*/pagefile.sys"]
+    },
+    {
+      "id": "win-hiberfil", "name": "休眠文件", "cat": "系统与内核", "risk": "info",
+      "desc": "hiberfil.sys 是休眠/快速启动的内存镜像，通常为内存大小的 40%~100%",
+      "why": "不用休眠功能的话：管理员运行 powercfg /h off 即可整体释放（常见 8~25 GB）",
+      "paths": ["*/hiberfil.sys"]
+    },
+    {
+      "id": "win-swapfile", "name": "UWP 交换文件", "cat": "系统与内核", "risk": "info",
+      "desc": "swapfile.sys 供 Microsoft Store 应用使用，通常仅几十 MB 到 1 GB",
+      "why": "系统自动管理，不用管",
+      "paths": ["*/swapfile.sys"]
+    },
+    {
+      "id": "win-programdata", "name": "ProgramData 公共数据", "cat": "系统与内核", "risk": "danger",
+      "desc": "所有软件共享的程序数据与配置（杀毒库、开始菜单、驱动数据等）",
+      "why": "整目录锁定保护；里面个别子目录（见子项）可清",
+      "paths": ["%ProgramData%"],
+      "clean": [
+        {"sub": "Package Cache", "risk": "caution", "note": "VS/VC++ 运行库安装器缓存，删了会影响修复卸载，确认后可清"},
+        {"sub": "Microsoft/Windows/WER", "risk": "safe", "note": "Windows 错误报告队列"},
+        {"sub": "NVIDIA Corporation/Downloader", "risk": "safe", "note": "NVIDIA 驱动安装包下载缓存"}
+      ]
+    },
+    {
+      "id": "win-recovery", "name": "系统恢复分区内容", "cat": "系统与内核", "risk": "danger",
+      "desc": "Windows 恢复环境（WinRE）与出厂恢复镜像",
+      "why": "删除会导致无法进入恢复模式，品牌机还可能丢出厂镜像",
+      "paths": ["C:/Recovery"]
+    },
+    {
+      "id": "win-old", "name": "旧系统备份 Windows.old", "cat": "系统与内核", "risk": "caution",
+      "desc": "大版本更新后保留的旧系统，用于 10 天内回滚",
+      "why": "确认系统运行正常、不需要回滚后可整体删除（用磁盘清理里的「以前的 Windows 安装」更稳妥），常见 15~40 GB",
+      "paths": ["C:/Windows.old"]
+    },
+    {
+      "id": "win-driver-extract", "name": "驱动解压残留", "cat": "驱动与硬件", "risk": "safe",
+      "desc": "NVIDIA/AMD/Intel/Realtek 等驱动安装时解压在盘根或 Intel/AMD 目录的临时文件",
+      "why": "驱动装完就没了用处，可整体删除（常见 1~3 GB）",
+      "paths": ["C:/Intel", "C:/AMD", "C:/NVIDIA", "C:/NVIDIA", "C:/Realtek", "C:/Program Files/NVIDIA Corporation/Installer2"]
+    },
+    {
+      "id": "win-install-wim", "name": "系统安装镜像残留", "cat": "系统与内核", "risk": "caution",
+      "desc": "install.wim / sources 目录是系统安装或部署时残留的镜像文件",
+      "why": "系统装好后就没用了，确认不是你刻意保留的安装介质即可删（单个可达 4 GB+）",
+      "paths": ["C:/install.wim", "C:/sources"]
+    },
+    {
+      "id": "win-perflogs", "name": "性能日志", "cat": "系统与内核", "risk": "safe",
+      "desc": "PerfLogs 性能监视日志，一般基本是空的",
+      "why": "可删可留",
+      "paths": ["C:/PerfLogs"]
+    },
+    {
+      "id": "win-spooler", "name": "打印任务队列", "cat": "驱动与硬件", "risk": "safe",
+      "desc": "打印后台服务的任务缓存（spool\\PRINTERS）",
+      "why": "打印任务卡死时清空 PRINTERS 子目录即可，先停 Print Spooler 服务",
+      "paths": ["%SystemRoot%/System32/spool"]
+    },
+    {
+      "id": "win-appx", "name": "Microsoft Store 应用", "cat": "系统与内核", "risk": "danger",
+      "desc": "WindowsApps 商店应用本体与 Packages 应用数据",
+      "why": "商店应用的安装/数据目录，卸载走「设置→应用」，不要手删",
+      "paths": ["%ProgramFiles%/WindowsApps", "%LOCALAPPDATA%/Packages"]
+    },
+    {
+      "id": "user-desktop", "name": "桌面", "cat": "个人目录", "risk": "data",
+      "desc": "你的桌面文件（实际上存在用户目录里）",
+      "why": "全是个人数据，自行整理；大文件建议挪到数据盘",
+      "paths": ["%USERPROFILE%/Desktop"]
+    },
+    {
+      "id": "user-documents", "name": "文档", "cat": "个人目录", "risk": "data",
+      "desc": "文档目录，很多软件默认把数据存这里（微信/QQ 的历史版本就在这）",
+      "why": "个人数据；注意里面常藏着软件数据目录（Tencent Files、WeChat Files 等），别当成纯文档删",
+      "paths": ["%USERPROFILE%/Documents"]
+    },
+    {
+      "id": "user-downloads", "name": "下载目录", "cat": "个人目录", "risk": "data",
+      "desc": "浏览器等工具的默认下载落盘点",
+      "why": "旧安装包（.exe/.zip/.iso）装完就没用了，是常见的几个 GB 级可清理区；个人下载的资料自行判断",
+      "paths": ["%USERPROFILE%/Downloads"],
+      "clean": [{"sub": "*.exe/*.zip/*.iso 旧安装包", "risk": "caution", "note": "确认不再需要重装的旧安装包"}]
+    },
+    {
+      "id": "user-media", "name": "图片/视频/音乐", "cat": "个人目录", "risk": "data",
+      "desc": "个人媒体库",
+      "why": "个人数据，工具只做统计不判断",
+      "paths": ["%USERPROFILE%/Pictures", "%USERPROFILE%/Videos", "%USERPROFILE%/Music"]
+    },
+    {
+      "id": "user-appdata-roaming", "name": "AppData\\Roaming 说明", "cat": "个人目录", "risk": "caution",
+      "desc": "漫游配置区：软件的设置、账号数据、聊天记录索引等",
+      "why": "整体不要清；个别软件的 Cache/缓存 子目录可清（本知识库会在你点进具体软件时给出子项建议）",
+      "paths": ["%APPDATA%"]
+    },
+    {
+      "id": "user-appdata-local", "name": "AppData\\Local 说明", "cat": "个人目录", "risk": "caution",
+      "desc": "本机数据区：软件缓存、浏览器数据、应用安装（Electron 类）、WSL 虚拟盘等都在这",
+      "why": "最容易悄悄涨到上百 GB 的区域，逐个软件判断；常见安全清理点：各软件 Cache、Temp、CrashDumps",
+      "paths": ["%LOCALAPPDATA%"]
+    },
+    {
+      "id": "user-temp", "name": "用户临时文件", "cat": "个人目录", "risk": "safe",
+      "desc": "%TEMP% 用户级临时目录，安装包解压、编译中间产物聚集地",
+      "why": "可放心清（占用中的自动跳过），经常能回收几百 MB 到几个 GB",
+      "paths": ["%LOCALAPPDATA%/Temp"]
+    },
+    {
+      "id": "user-crashdumps", "name": "应用崩溃转储", "cat": "个人目录", "risk": "safe",
+      "desc": "应用程序崩溃时生成的 dump 文件",
+      "why": "除非要排查某个软件的崩溃原因，否则可直接清",
+      "paths": ["%LOCALAPPDATA%/CrashDumps"]
+    },
+    {
+      "id": "user-ssh", "name": "SSH 密钥与凭证", "cat": "个人目录", "risk": "danger",
+      "desc": ".ssh 目录存放你的 SSH 私钥，.aws/.kube 等存放云服务凭证",
+      "why": "泄漏=服务器权限丢失，绝对不要删也不要外传；建议定期检查授权的设备",
+      "paths": ["%USERPROFILE%/.ssh", "%USERPROFILE%/.aws", "%USERPROFILE%/.kube", "%USERPROFILE%/.gnupg"]
+    },
+    {
+      "id": "onedrive", "name": "OneDrive 同步目录", "cat": "网盘与下载", "risk": "info",
+      "desc": "OneDrive 同步文件夹。开启「按需文件」后，云占位文件在磁盘上只占极小空间",
+      "why": "看到的「大小」是逻辑大小，实际磁盘占用以「大小」列减「属性里磁盘占用」为准；右键可释放/始终保留",
+      "paths": ["%USERPROFILE%/OneDrive", "%USERPROFILE%/OneDrive - *"]
+    },
+    {
+      "id": "dev-node-modules", "name": "node_modules 依赖目录", "cat": "开发工具链", "risk": "safe",
+      "desc": "Node.js 项目的依赖包目录，前端/Node 项目最大的空间黑洞",
+      "why": "删掉零风险，package.json 在，npm install 就能完整重建；常年不打开的项目建议直接删",
+      "paths": ["**/node_modules"]
+    },
+    {
+      "id": "dev-npm-cache", "name": "npm 缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "npm 下载过的包的本地缓存",
+      "why": "npm cache clean --force 或直接删，下次安装自动重下",
+      "paths": ["%LOCALAPPDATA%/npm-cache"]
+    },
+    {
+      "id": "dev-pnpm-store", "name": "pnpm 全局存储", "cat": "开发工具链", "risk": "caution",
+      "desc": "pnpm 用硬链接共享的包仓库，所有项目共享一份实体",
+      "why": "pnpm store prune 可清理无用包；直接删会导致现有项目依赖失效",
+      "paths": ["%LOCALAPPDATA%/pnpm"]
+    },
+    {
+      "id": "dev-pip-cache", "name": "pip 缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "Python pip 下载的轮子缓存",
+      "why": "pip cache purge 或直接删，模型/工具重装时会重新下载",
+      "paths": ["%LOCALAPPDATA%/pip/cache", "%USERPROFILE%/.cache/pip"]
+    },
+    {
+      "id": "dev-go-modcache", "name": "Go 模块缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "Go 下载的模块源码缓存，编译过的项目越多越大",
+      "why": "go clean -modcache 或直接删，下次构建自动重新拉取",
+      "paths": ["%USERPROFILE%/go/pkg/mod"]
+    },
+    {
+      "id": "dev-go-build", "name": "Go 编译缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "Go 编译中间产物缓存",
+      "why": "go clean -cache 或直接删，只是下次编译慢一点",
+      "paths": ["%LOCALAPPDATA%/go-build"]
+    },
+    {
+      "id": "dev-gradle", "name": "Gradle 缓存", "cat": "开发工具链", "risk": "caution",
+      "desc": "Gradle 构建缓存与依赖仓库，Android/Java 开发大户",
+      "why": "caches 目录可删（重建慢），wrapper 分布可删；在用的项目重新构建会自动重下",
+      "paths": ["%USERPROFILE%/.gradle"]
+    },
+    {
+      "id": "dev-maven", "name": "Maven 本地仓库", "cat": "开发工具链", "risk": "caution",
+      "desc": "Maven 下载的依赖 jar 仓库（.m2/repository）",
+      "why": "Java 项目在用时别删（重新解析慢）；不做了的项目群可整体清",
+      "paths": ["%USERPROFILE%/.m2"]
+    },
+    {
+      "id": "dev-cargo", "name": "Cargo/Rust 缓存", "cat": "开发工具链", "risk": "caution",
+      "desc": "Rust 的注册表索引与依赖源码缓存",
+      "why": "registry/cache 可删（cargo 会重下）；.cargo/bin 是工具链本体别删",
+      "paths": ["%USERPROFILE%/.cargo"]
+    },
+    {
+      "id": "dev-nuget", "name": "NuGet 包缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": ".NET 项目的包缓存",
+      "why": "直接删，dotnet restore 自动重下",
+      "paths": ["%USERPROFILE%/.nuget/packages"]
+    },
+    {
+      "id": "dev-conda", "name": "Conda 环境", "cat": "开发工具链", "risk": "caution",
+      "desc": "conda create 出来的独立 Python 环境，每个环境 1~10 GB",
+      "why": "conda env list 看看哪些环境早不用了，conda env remove -n 名字 干掉；envs 目录手删会留残迹",
+      "paths": ["%USERPROFILE%/miniconda3/envs", "%USERPROFILE%/anaconda3/envs", "%ProgramData%/miniconda3/envs", "%ProgramData%/anaconda3/envs"]
+    },
+    {
+      "id": "dev-venv", "name": "Python 虚拟环境", "cat": "开发工具链", "risk": "safe",
+      "desc": "项目里的 venv/.venv 目录，复制了一整套 Python 解释器和库",
+      "why": "项目还活着就留着；弃坑项目连 venv 一起删，requirements.txt 在随时重建",
+      "paths": ["**/venv", "**/.venv", "**/env/Lib/site-packages"]
+    },
+    {
+      "id": "dev-vscode", "name": "VS Code", "cat": "开发工具链", "risk": "caution",
+      "desc": "VS Code 本体、扩展与工作区数据",
+      "why": "本体和扩展别删；%APPDATA%/Code 下的 Cache*/Service Worker 缓存子项可清",
+      "paths": ["%LOCALAPPDATA%/Programs/Microsoft VS Code", "%USERPROFILE%/.vscode", "%APPDATA%/Code"],
+      "clean": [{"sub": "AppData/Roaming/Code/Cache", "risk": "safe", "note": "渲染缓存"}, {"sub": "AppData/Roaming/Code/CachedData", "risk": "safe", "note": "启动缓存"}]
+    },
+    {
+      "id": "dev-jetbrains", "name": "JetBrains 全家桶", "cat": "开发工具链", "risk": "caution",
+      "desc": "IDEA/PyCharm 等的索引缓存与配置，单版本缓存可到 5~20 GB",
+      "why": "%LOCALAPPDATA%/JetBrains 里旧版本的 system/index 缓存可删（重开项目重建索引慢一会儿）；%APPDATA%/JetBrains 是配置别删",
+      "paths": ["%LOCALAPPDATA%/JetBrains", "%APPDATA%/JetBrains"],
+      "clean": [{"sub": "旧版本号的 system/caches", "risk": "safe", "note": "已卸载旧版本的索引缓存"}]
+    },
+    {
+      "id": "dev-android", "name": "Android 开发环境", "cat": "开发工具链", "risk": "caution",
+      "desc": "Android SDK、模拟器镜像（AVD 单个 4~16 GB）与 Gradle 缓存",
+      "why": "不开发安卓了：SDK、.android/avd 里的模拟器镜像都是可回收大户；系统镜像 system-images 也可删",
+      "paths": ["%LOCALAPPDATA%/Android/Sdk", "%USERPROFILE%/.android"]
+    },
+    {
+      "id": "dev-docker-wsl", "name": "Docker Desktop 数据盘", "cat": "开发工具链", "risk": "caution",
+      "desc": "Docker 的镜像和容器全部存在一个 WSL 虚拟磁盘（ext4.vhdx / DockerDesktopWSL）里",
+      "why": "vhdx 只增不减：docker system prune 清理镜像后，还需用 diskpart/Optimize-VHD 压缩 vhdx 才真正释放",
+      "paths": ["%LOCALAPPDATA%/Docker/wsl", "%LOCALAPPDATA%/DockerDesktop"]
+    },
+    {
+      "id": "dev-wsl", "name": "WSL Linux 发行版", "cat": "开发工具链", "risk": "caution",
+      "desc": "WSL 子系统的 Linux 虚拟磁盘（ext4.vhdx），你的 Linux 系统和文件都在里面",
+      "why": "里面的数据就是 Linux 系统本身，不能直接删；Linux 内清理后用 Optimize-VHD 或 diskpart compact 压缩回收空间",
+      "paths": ["%LOCALAPPDATA%/wsl", "%LOCALAPPDATA%/Packages/CanonicalGroupLimited*", "%USERPROFILE%/AppData/Local/Packages/*WSL*"]
+    },
+    {
+      "id": "dev-huggingface", "name": "HuggingFace 模型缓存", "cat": "AI 与模型", "risk": "caution",
+      "desc": "transformers/diffusers 下载的模型缓存，单个模型 2~40 GB",
+      "why": "弃用的模型可删（要用时会重新下载，有的很大下得慢）；~/.cache/huggingface/hub 按模型名分目录，按需清理",
+      "paths": ["%USERPROFILE%/.cache/huggingface"]
+    },
+    {
+      "id": "dev-torch", "name": "Torch 模型缓存", "cat": "AI 与模型", "risk": "safe",
+      "desc": "torch.hub 下载的预训练模型",
+      "why": "可删，代码运行时会自动重下",
+      "paths": ["%USERPROFILE%/.cache/torch"]
+    },
+    {
+      "id": "ai-ollama", "name": "Ollama 本地模型", "cat": "AI 与模型", "risk": "caution",
+      "desc": "ollama pull 下来的模型存在 .ollama/models，单个 4~40 GB",
+      "why": "ollama rm 模型名 删不用的；blobs 直接删会让 ollama 报错，走命令删",
+      "paths": ["%USERPROFILE%/.ollama"]
+    },
+    {
+      "id": "ai-lmstudio", "name": "LM Studio 模型", "cat": "AI 与模型", "risk": "caution",
+      "desc": "LM Studio 下载的 GGUF 模型仓库",
+      "why": "界面里删模型即可；models 目录里的文件夹就是模型本体",
+      "paths": ["%USERPROFILE%/.lmstudio", "%USERPROFILE%/.cache/lm-studio"]
+    },
+    {
+      "id": "ai-comfyui", "name": "ComfyUI / Stable Diffusion 工作流", "cat": "AI 与模型", "risk": "caution",
+      "desc": "AI 绘图工作流本体。models 目录（checkpoint/ diffusion_models/ text_encoders/ vae）是空间大户，单个模型 2~30 GB",
+      "why": "输出目录可清，模型按需保留——不用的 checkpoint 删掉最省；venv 可随项目重建",
+      "paths": ["C:/AI", "**/ComfyUI", "**/stable-diffusion-webui"],
+      "related": [{"paths": ["**/venv", "**/.venv"], "note": "ComfyUI 便携包自带 Python 虚拟环境"}]
+    },
+    {
+      "id": "im-wechat-legacy", "name": "微信（3.x 旧版）", "cat": "通讯与办公", "risk": "caution",
+      "desc": "旧版微信：聊天记录数据库在 %APPDATA%/Tencent/WeChat，聊天图片视频文件在 Documents/WeChat Files",
+      "why": "聊天记录是数据不能删；WeChat Files 里 FileStorage/Cache 与 Video 是清理大户（经常 10~50 GB）",
+      "paths": ["%APPDATA%/Tencent/WeChat", "%USERPROFILE%/Documents/WeChat Files"],
+      "clean": [
+        {"sub": "WeChat Files/WeChat Files/FileStorage/Cache", "risk": "safe", "note": "图片视频缓存"},
+        {"sub": "WeChat Files/WeChat Files/FileStorage/Video", "risk": "caution", "note": "聊天视频，删后聊天里无法回看"}
+      ],
+      "related": [{"paths": ["%USERPROFILE%/Documents/xwechat_files", "%APPDATA%/Tencent/xwechat"], "note": "微信 4.x 新版数据落盘点"}]
+    },
+    {
+      "id": "im-wechat4", "name": "微信（4.x 新版）", "cat": "通讯与办公", "risk": "caution",
+      "desc": "微信 4.x 把聊天文件统一放到 Documents/xwechat_files（可在微信设置里改位置）",
+      "why": "dbversations 是聊天记录不能删；cache 相关子目录可清；可在微信「设置→文件管理」里整体迁移到数据盘",
+      "paths": ["%USERPROFILE%/Documents/xwechat_files", "%APPDATA%/Tencent/xwechat"],
+      "related": [{"paths": ["%USERPROFILE%/Documents/WeChat Files", "%APPDATA%/Tencent/WeChat"], "note": "旧版微信落盘点，升级后常被遗忘"}]
+    },
+    {
+      "id": "im-qq", "name": "QQ（NT 版）", "cat": "通讯与办公", "risk": "caution",
+      "desc": "QQ NT 版数据在 %APPDATA%/Tencent/QQ；经典版聊天文件在 Documents/Tencent Files",
+      "why": "聊天记录是数据；Tencent Files 下按 QQ 号分目录，里面的 FileAvi/FileRecv 收到的文件可自行整理",
+      "paths": ["%APPDATA%/Tencent/QQ", "%USERPROFILE%/Documents/Tencent Files"]
+    },
+    {
+      "id": "im-wechat-work", "name": "企业微信", "cat": "通讯与办公", "risk": "caution",
+      "desc": "企业微信的聊天与文件缓存（wxwork）",
+      "why": "聊天记录是数据；Cache 子目录可清",
+      "paths": ["%APPDATA%/Tencent/wxwork", "%USERPROFILE%/Documents/WXWork"]
+    },
+    {
+      "id": "im-dingtalk", "name": "钉钉", "cat": "通讯与办公", "risk": "caution",
+      "desc": "钉钉的聊天缓存与下载文件，缓存经常悄悄涨到几 GB",
+      "why": "Accounts 下的缓存可清；聊天记录数据别动",
+      "paths": ["%APPDATA%/DingTalk", "%USERPROFILE%/Documents/DingTalk"]
+    },
+    {
+      "id": "im-feishu", "name": "飞书", "cat": "通讯与办公", "risk": "caution",
+      "desc": "飞书的本地缓存与下载",
+      "why": "Cache/sdk_cache 可清；消息数据别动",
+      "paths": ["%APPDATA%/Feishu", "%LOCALAPPDATA%/Feishu"]
+    },
+    {
+      "id": "im-wemeet", "name": "腾讯会议", "cat": "通讯与办公", "risk": "caution",
+      "desc": "腾讯会议本体与云端录制缓存",
+      "why": "本地缓存的录制视频确认不需要后可删（单场会议录制可到数 GB）",
+      "paths": ["%APPDATA%/Tencent/WeMeet", "%USERPROFILE%/Documents/WeMeet"]
+    },
+    {
+      "id": "im-telegram", "name": "Telegram", "cat": "通讯与办公", "risk": "caution",
+      "desc": "Telegram Desktop：tdata 是登录态绝对不能删，下载的媒体在 tdata 内或用户自定义目录",
+      "why": "tdata 删了=所有账号退出且本地会话丢失；媒体缓存可在 Telegram 设置里限制大小",
+      "paths": ["%APPDATA%/Telegram Desktop"]
+    },
+    {
+      "id": "im-discord", "name": "Discord", "cat": "通讯与办公", "risk": "caution",
+      "desc": "Discord 客户端缓存（Electron 应用）",
+      "why": "Cache/Code Cache 可清；本体在 LocalCache 里别动",
+      "paths": ["%APPDATA%/discord"]
+    },
+    {
+      "id": "office-outlook", "name": "Outlook 邮件数据", "cat": "通讯与办公", "risk": "danger",
+      "desc": "OST/PST 是你的全部邮件本地镜像，单文件动辄 10~50 GB",
+      "why": "删除=本地邮件全没（云端还有的能重拉）；正确瘦身：归档旧邮件、压缩 OST（文件→工具→邮箱清理）",
+      "paths": ["%LOCALAPPDATA%/Microsoft/Outlook"]
+    },
+    {
+      "id": "office-wps", "name": "WPS Office", "cat": "通讯与办公", "risk": "caution",
+      "desc": "WPS 本体数据与云文档缓存",
+      "why": "云备份缓存（kingsoft/office6/backup）可清；本地没同步过的文档别动",
+      "paths": ["%APPDATA%/kingsoft", "%LOCALAPPDATA%/kingsoft"]
+    },
+    {
+      "id": "office-ms", "name": "Microsoft Office", "cat": "通讯与办公", "risk": "caution",
+      "desc": "Office 本体与模板/文档缓存",
+      "why": "本体别删；OfficeFileCache（%APPDATA%/Microsoft/Office 里的 SharePoint 文档缓存）可清",
+      "paths": ["%ProgramFiles%/Microsoft Office", "%APPDATA%/Microsoft/Office"],
+      "clean": [{"sub": "AppData/Roaming/Microsoft/Office/16.0/OfficeFileCache", "risk": "safe", "note": "SharePoint/OneDrive 文档同步缓存"}]
+    },
+    {
+      "id": "net-baidu-pan", "name": "百度网盘", "cat": "网盘与下载", "risk": "caution",
+      "desc": "百度网盘：程序数据在 %APPDATA%/baidu/BaiduNetdisk，下载默认落在「baidunetdiskdownload」目录",
+      "why": "下载目录是你下载的文件（游戏包/资源），不需要了就是纯回收大户；程序缓存 Cache 可清；可在网盘设置里改下载位置",
+      "paths": ["C:/baidunetdiskdownload", "D:/baidunetdiskdownload", "%USERPROFILE%/baidunetdiskdownload", "**/BaiduNetdiskDownload", "%APPDATA%/baidu/BaiduNetdisk"],
+      "clean": [{"sub": "程序数据目录下的 Cache", "risk": "safe", "note": "传输缓存"}],
+      "related": [{"paths": ["%APPDATA%/baidu/BaiduNetdisk/users"], "note": "账号配置与传输记录"}]
+    },
+    {
+      "id": "net-quark", "name": "夸克网盘", "cat": "网盘与下载", "risk": "caution",
+      "desc": "夸克网盘程序数据与下载缓存",
+      "why": "下载的文件自行判断；程序缓存可清",
+      "paths": ["%APPDATA%/Quark", "**/QuarkDownloads"]
+    },
+    {
+      "id": "net-alipan", "name": "阿里云盘", "cat": "网盘与下载", "risk": "caution",
+      "desc": "阿里云盘桌面端数据",
+      "why": "下载目录自行判断，缓存可清",
+      "paths": ["%APPDATA%/aDrive", "**/aDrive-download"]
+    },
+    {
+      "id": "net-thunder", "name": "迅雷", "cat": "网盘与下载", "risk": "caution",
+      "desc": "迅雷的下载任务与缓存",
+      "why": "已完成的下载自行判断；任务数据库（task_v3.db 等）删了下载列表就没了",
+      "paths": ["%APPDATA%/Thunder", "%USERPROFILE%/Downloads/Thunder"]
+    },
+    {
+      "id": "net-qbittorrent", "name": "qBittorrent", "cat": "网盘与下载", "risk": "caution",
+      "desc": "BT 客户端的配置、种子状态与下载",
+      "why": "下载目录是大头（自行判断）；BT_backup 是做种状态删了任务列表就没了",
+      "paths": ["%LOCALAPPDATA%/qBittorrent", "%APPDATA%/qBittorrent"]
+    },
+    {
+      "id": "game-steam", "name": "Steam", "cat": "游戏平台", "risk": "caution",
+      "desc": "Steam 本体与游戏库。游戏本体在 steamapps/common，下载缓存在 steamapps/downloading，创意工坊在 steamapps/workshop",
+      "why": "不玩的游戏走 Steam 卸载（或直接删 common 下对应文件夹后 Steam 里再卸载）；downloading 可清；appcache 可清",
+      "paths": ["%ProgramFiles(x86)%/Steam", "**/steamapps", "**/SteamLibrary"],
+      "clean": [
+        {"sub": "steamapps/downloading", "risk": "safe", "note": "未完成的更新/下载缓存"},
+        {"sub": "appcache", "risk": "safe", "note": "客户端缓存"}
+      ],
+      "related": [{"paths": ["**/steamapps/libraryfolders.vdf"], "note": "多库盘位置记录在这里"}]
+    },
+    {
+      "id": "game-epic", "name": "Epic Games", "cat": "游戏平台", "risk": "caution",
+      "desc": "Epic 商店游戏库与启动器缓存",
+      "why": "游戏本体在 Epic Games 目录（不玩了可删，成就记录在云端）；启动器 WebCache 可清",
+      "paths": ["%ProgramFiles%/Epic Games", "%LOCALAPPDATA%/EpicGamesLauncher"],
+      "clean": [{"sub": "AppData/Local/EpicGamesLauncher/Saved/webcache", "risk": "safe", "note": "启动器网页缓存"}]
+    },
+    {
+      "id": "game-mihoyo", "name": "米哈游启动器", "cat": "游戏平台", "risk": "caution",
+      "desc": "米哈游官方启动器，games 目录下是原神/星穹铁道/绝区零本体（单个 60~100 GB）",
+      "why": "不玩的游戏在启动器里卸载（或直接删对应 games 子目录，下次想玩重下）；退订后启动器本身只有几百 MB",
+      "paths": ["%ProgramFiles%/miHoYo Launcher", "D:/miHoYo Launcher"],
+      "clean": [{"sub": "games 里不再游玩的游戏目录", "risk": "caution", "note": "重装需重新下载几十 GB"}]
+    },
+    {
+      "id": "game-zzz", "name": "绝区零 (ZenlessZoneZero)", "cat": "游戏平台", "risk": "caution",
+      "desc": "米哈游游戏本体（ZenlessZoneZero Game 目录），视频音频资源占绝大部分",
+      "why": "不玩了可整体删除释放几十 GB，账号进度在云端；清缓存请走启动器的「修复/清理」",
+      "paths": ["**/ZenlessZoneZero Game", "**/ZenlessZoneZero_Data"]
+    },
+    {
+      "id": "game-genshin", "name": "原神", "cat": "游戏平台", "risk": "caution",
+      "desc": "原神本体（Genshin Impact / YuanShen），本体 60~100 GB",
+      "why": "不玩了可删，进度云端保存",
+      "paths": ["**/Genshin Impact Game", "**/Yuan Shen"]
+    },
+    {
+      "id": "game-star-rail", "name": "崩坏：星穹铁道", "cat": "游戏平台", "risk": "caution",
+      "desc": "星穹铁道本体（Star Rail Game）",
+      "why": "同米哈游系，不玩了可删",
+      "paths": ["**/Star Rail Game"]
+    },
+    {
+      "id": "game-delta-force", "name": "三角洲行动", "cat": "游戏平台", "risk": "caution",
+      "desc": "腾讯三角洲行动游戏本体（Delta Force），单游戏 100~140 GB 的大户",
+      "why": "不玩了可整体删除（进度在云端账号）；下载/修复请走官方启动器",
+      "paths": ["**/Delta Force"]
+    },
+    {
+      "id": "game-wegame", "name": "WeGame", "cat": "游戏平台", "risk": "caution",
+      "desc": "腾讯 WeGame 平台与游戏库",
+      "why": "游戏走 WeGame 卸载；启动器缓存可清",
+      "paths": ["%ProgramFiles%/WeGame"]
+    },
+    {
+      "id": "game-battlenet", "name": "Battle.net", "cat": "游戏平台", "risk": "caution",
+      "desc": "暴雪战网客户端，Cache/Blizzard 下载缓存常驻几个 GB",
+      "why": "游戏本体不玩了走战网卸载；Cache 可清",
+      "paths": ["%ProgramFiles%/Battle.net", "%ProgramData%/Battle.net"],
+      "clean": [{"sub": "Cache", "risk": "safe", "note": "战网下载缓存"}]
+    },
+    {
+      "id": "game-minecraft", "name": "Minecraft Java 版", "cat": "游戏平台", "risk": "caution",
+      "desc": ".minecraft 目录：本体+模组+存档+资源包",
+      "why": "saves 是存档（删前三思）；mods/资源包/版本目录可按需清",
+      "paths": ["%APPDATA%/.minecraft"]
+    },
+    {
+      "id": "browser-chrome", "name": "Chrome", "cat": "浏览器", "risk": "caution",
+      "desc": "Chrome 用户数据：Cache*/Code Cache/GPUCache 可清，Bookmarks/Passwords/Login Data 是命根子",
+      "why": "缓存子项可清出 1~10 GB；Profile 数据（书签密码扩展）不要动",
+      "paths": ["%LOCALAPPDATA%/Google/Chrome/User Data", "%PROGRAMFILES%/Google/Chrome"],
+      "clean": [
+        {"sub": "User Data/Default/Cache", "risk": "safe", "note": "网页缓存"},
+        {"sub": "User Data/Default/Code Cache", "risk": "safe", "note": "JS 缓存"},
+        {"sub": "User Data/GrShaderCache", "risk": "safe", "note": "着色器缓存"}
+      ]
+    },
+    {
+      "id": "browser-edge", "name": "Microsoft Edge", "cat": "浏览器", "risk": "caution",
+      "desc": "Edge 用户数据，结构与 Chrome 相同",
+      "why": "同样：Cache 可清，Profile 别动；Edge 还带滚动更新包可清",
+      "paths": ["%LOCALAPPDATA%/Microsoft/Edge/User Data", "%ProgramFiles(x86)%/Microsoft/Edge"],
+      "clean": [{"sub": "User Data/Default/Cache", "risk": "safe", "note": "网页缓存"}]
+    },
+    {
+      "id": "browser-firefox", "name": "Firefox", "cat": "浏览器", "risk": "caution",
+      "desc": "Firefox 的 profile 目录（cache2 是缓存，places.sqlite 是书签历史）",
+      "why": "cache2 可清；places.sqlite 和登录数据别动",
+      "paths": ["%LOCALAPPDATA%/Mozilla/Firefox", "%APPDATA%/Mozilla/Firefox"],
+      "clean": [{"sub": "cache2", "risk": "safe", "note": "网页缓存"}]
+    },
+    {
+      "id": "media-jianying", "name": "剪映", "cat": "媒体创作", "risk": "caution",
+      "desc": "剪映专业版：素材缓存与草稿（Cache 与 JianyingPro User Data）",
+      "why": "Cache 可清（经常 5~20 GB）；草稿目录删了项目就没了；可在设置里改缓存位置",
+      "paths": ["%LOCALAPPDATA%/JianyingPro", "%APPDATA%/JianyingPro"],
+      "clean": [{"sub": "Cache", "risk": "safe", "note": "素材/预览缓存"}]
+    },
+    {
+      "id": "media-adobe", "name": "Adobe 全家桶缓存", "cat": "媒体创作", "risk": "safe",
+      "desc": "Adobe 系软件的公共媒体缓存（Media Cache Files）、渲染缓存",
+      "why": "Media Cache 可整体清（PR/AE 打开项目会重建，首次载入慢些），经常 5~30 GB；配置与预设目录别动",
+      "paths": ["%APPDATA%/Adobe", "%LOCALAPPDATA%/Adobe"],
+      "clean": [{"sub": "Common/Media Cache Files", "risk": "safe", "note": "PR/AE 媒体缓存"}]
+    },
+    {
+      "id": "media-davinci", "name": "DaVinci Resolve", "cat": "媒体创作", "risk": "caution",
+      "desc": "达芬奇的缓存与数据库",
+      "why": "CacheClip/渲染缓存可清；数据库（项目工程）别动",
+      "paths": ["%APPDATA%/Blackmagic Design", "%PROGRAMDATA%/Blackmagic Design"]
+    },
+    {
+      "id": "music-netease", "name": "网易云音乐", "cat": "媒体创作", "risk": "safe",
+      "desc": "网易云音乐的歌词/封面/歌曲缓存",
+      "why": "Cache 目录可整体清（经常 2~10 GB），下载的歌单独存",
+      "paths": ["%APPDATA%/Netease/CloudMusic", "%LOCALAPPDATA%/Netease/CloudMusic"],
+      "clean": [{"sub": "Cache", "risk": "safe", "note": "试听缓存"}]
+    },
+    {
+      "id": "video-tencent", "name": "腾讯视频/爱奇艺/优酷 缓存", "cat": "媒体创作", "risk": "safe",
+      "desc": "视频站客户端的离线缓存目录",
+      "why": "没在看的离线缓存可整段回收（经常 5~30 GB）",
+      "paths": ["%APPDATA%/Tencent/QQLive", "%APPDATA%/iqiyi", "%LOCALAPPDATA%/Youku"]
+    },
+    {
+      "id": "gpu-nvidia", "name": "NVIDIA 显卡缓存", "cat": "驱动与硬件", "risk": "safe",
+      "desc": "着色器缓存（D3DSCache/DXCache/GLCache）与驱动安装包缓存（Downloader/Installer2）",
+      "why": "全部可清：着色器缓存游戏会自动重建（首帧略慢），驱动包装完就没用",
+      "paths": ["%LOCALAPPDATA%/D3DSCache", "%LOCALAPPDATA%/NVIDIA", "%LOCALAPPDATA%/NVIDIA Corporation", "%ProgramData%/NVIDIA Corporation/Downloader", "%ProgramData%/NVIDIA Corporation/Installer2"]
+    },
+    {
+      "id": "gpu-amd", "name": "AMD 显卡缓存", "cat": "驱动与硬件", "risk": "safe",
+      "desc": "AMD 的着色器缓存与安装解压残留",
+      "why": "DxCache/GLCache 可清；安装解压目录可删",
+      "paths": ["%LOCALAPPDATA%/AMD"]
+    },
+    {
+      "id": "vm-vmware", "name": "VMware 虚拟机", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "VMware 虚拟机目录（.vmx/.vmdk），单个虚拟机几十 GB",
+      "why": "虚拟机磁盘是数据：不用的虚拟机删整个目录；在用的可用「清理磁盘」回收已删文件的空间",
+      "paths": ["D:/虚拟机", "%USERPROFILE%/Documents/Virtual Machines"]
+    },
+    {
+      "id": "vm-virtualbox", "name": "VirtualBox", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "VirtualBox 虚拟机（VirtualBox VMs 目录）",
+      "why": "不用的虚拟机走界面删除；vdi 磁盘支持 compact 回收",
+      "paths": ["%USERPROFILE%/VirtualBox VMs"]
+    },
+    {
+      "id": "tool-clash", "name": "代理/Clash 工具", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "Clash/FlClash 等代理工具的内核、配置与订阅缓存",
+      "why": "日志和缓存可清；配置（profiles/订阅链接）删了要重新导入",
+      "paths": ["%USERPROFILE%/.config/clash", "%APPDATA%/com.follow.clash", "%LOCALAPPDATA%/FlClash"]
+    },
+    {
+      "id": "data-personal-work", "name": "个人工作素材", "cat": "个人数据", "risk": "data",
+      "desc": "你自己创建/收集的工作素材（拍摄素材、项目工程、下载中转等）",
+      "why": "工具只统计不判断：确认已完成归档的项目素材，转存到冷备份后本地即可释放；长期不动的先归档再删",
+      "paths": ["D:/下载", "D:/备份", "D:/剪辑工程"]
+    },
+    {
+      "id": "ai-workspace", "name": "AI 工作区（C:\\AI）", "cat": "个人数据", "risk": "data",
+      "desc": "本地 AI 项目工作区：ComfyUI/模型文件/自建工具等",
+      "why": "models 下不用的模型是大头；各项目的 venv/cache 可按开发工具链条目清理",
+      "paths": ["C:/AI"]
+    },
+    {
+      "id": "dev-vs", "name": "Visual Studio", "cat": "开发工具链", "risk": "caution",
+      "desc": "VS 本体（数 GB 到数十 GB）与各版本缓存",
+      "why": "本体走安装器卸载；%LOCALAPPDATA%/Microsoft/VisualStudio 下的 ComponentModelCache 可清",
+      "paths": ["%ProgramFiles%/Microsoft Visual Studio", "%LOCALAPPDATA%/Microsoft/VisualStudio"],
+      "clean": [{"sub": "ComponentModelCache", "risk": "safe", "note": "组件模型缓存"}]
+    },
+    {
+      "id": "dev-build-output", "name": "构建产物目录", "cat": "开发工具链", "risk": "safe",
+      "desc": "各种构建脚手架的输出目录：dist/build/out/.next/.nuxt/target 等可全部再生",
+      "why": "源码和包管理清单在，重新构建即可完整重建；弃坑项目里这些目录最该先删",
+      "paths": ["**/dist", "**/build", "**/.next", "**/.nuxt", "**/cmake-build-debug", "**/cmake-build-release"]
+    },
+    {
+      "id": "dev-rust-target", "name": "Rust target 目录", "cat": "开发工具链", "risk": "safe",
+      "desc": "Rust/Cargo 项目的编译产物，大项目单个可达 10~50 GB",
+      "why": "cargo build --release 一条命令完整重建；不活跃项目直接删",
+      "paths": ["**/target/debug", "**/target/release"]
+    },
+    {
+      "id": "dev-yarn-cache", "name": "Yarn 缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "Yarn 包缓存（Classic 在 %LOCALAPPDATA%/Yarn，Berry 在项目 .yarn/cache）",
+      "why": "可直接删，安装时自动重下",
+      "paths": ["%LOCALAPPDATA%/Yarn", "**/.yarn/cache"]
+    },
+    {
+      "id": "dev-bazel", "name": "Bazel 缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "Bazel 的输出基目录（output_user_root），大型单仓库项目能到几十 GB",
+      "why": "直接删，下次构建全量重建（慢一次）",
+      "paths": ["%LOCALAPPDATA%/_bazel_*"]
+    },
+    {
+      "id": "dev-vcpkg", "name": "vcpkg 包缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "vcpkg 的二进制缓存与下载缓存",
+      "why": "downloads 与 buildtrees 可清；installed 目录动过会影响在用项目",
+      "paths": ["%LOCALAPPDATA%/vcpkg", "%USERPROFILE%/AppData/Local/vcpkg/cache"]
+    },
+    {
+      "id": "dev-eclipse", "name": "Eclipse 工作区", "cat": "开发工具链", "risk": "caution",
+      "desc": "Eclipse 工作区元数据与插件缓存",
+      "why": "metadata/.plugins 里缓存可清；项目源码在 workspace 里别当缓存删",
+      "paths": ["%USERPROFILE%/eclipse-workspace", "%USERPROFILE%/workspace"]
+    },
+    {
+      "id": "dev-latex", "name": "LaTeX 发行版", "cat": "开发工具链", "risk": "caution",
+      "desc": "MiKTeX/TeX Live 的宏包库（按需自动下载，越用越大）",
+      "why": "MiKTeX Console 里可清理；TeX Live 整体卸载重装更省事",
+      "paths": ["%LOCALAPPDATA%/Programs/MiKTeX", "%USERPROFILE%/AppData/Roaming/MiKTeX", "C:/texlive"]
+    },
+    {
+      "id": "dev-matlab", "name": "MATLAB", "cat": "开发工具链", "risk": "caution",
+      "desc": "MATLAB 本体（20~40 GB）与偏好缓存",
+      "why": "本体走卸载；%APPDATA%/MathWorks 里的缓存可清，许可证与偏好别动",
+      "paths": ["%ProgramFiles%/MATLAB", "%APPDATA%/MathWorks", "%LOCALAPPDATA%/Temp/MathWorks"]
+    },
+    {
+      "id": "dev-arduino", "name": "Arduino / 嵌入式工具链", "cat": "开发工具链", "risk": "caution",
+      "desc": "Arduino15 包缓存（板卡核心/库）与 PlatformIo 包缓存",
+      "why": "packages 缓存按板卡堆积，不做对应开发可清（重装自动重下）",
+      "paths": ["%LOCALAPPDATA%/Arduino15", "%USERPROFILE%/.platformio"]
+    },
+    {
+      "id": "dev-rustup", "name": "rustup 工具链", "cat": "开发工具链", "risk": "caution",
+      "desc": "多版本 Rust 工具链（stable/nightly 各一套几百 MB）",
+      "why": "rustup toolchain list 看看只用 stable 的话，nightly 可卸载",
+      "paths": ["%USERPROFILE%/.rustup"]
+    },
+    {
+      "id": "browser-brave", "name": "Brave", "cat": "浏览器", "risk": "caution",
+      "desc": "Brave 浏览器用户数据（Chromium 结构）",
+      "why": "Cache 子项可清，Profile 别动",
+      "paths": ["%LOCALAPPDATA%/BraveSoftware"],
+      "clean": [{"sub": "Brave-Browser/User Data/Default/Cache", "risk": "safe", "note": "网页缓存"}]
+    },
+    {
+      "id": "browser-opera", "name": "Opera / Vivaldi", "cat": "浏览器", "risk": "caution",
+      "desc": "Opera 与 Vivaldi 的用户数据与缓存",
+      "why": "cache 子目录可清",
+      "paths": ["%APPDATA%/Opera Software", "%LOCALAPPDATA%/Opera Software", "%LOCALAPPDATA%/Vivaldi"]
+    },
+    {
+      "id": "browser-360qq", "name": "国产浏览器（360/QQ浏览器）", "cat": "浏览器", "risk": "caution",
+      "desc": "360/QQ/2345 等国产浏览器的用户数据与缓存",
+      "why": "各自的 User Data/Cache 可清；书签密码别动",
+      "paths": ["%APPDATA%/360se6", "%LOCALAPPDATA%/360Chrome", "%APPDATA%/Tencent/QQBrowser", "%LOCALAPPDATA%/QGBrowser"]
+    },
+    {
+      "id": "im-kook", "name": "KOOK / YY 语音", "cat": "通讯与办公", "risk": "caution",
+      "desc": "语音聊天工具的缓存",
+      "why": "Cache 可清",
+      "paths": ["%APPDATA%/KOOK", "%APPDATA%/kook", "%APPDATA%/duowan yy", "%LOCALAPPDATA%/YY"]
+    },
+    {
+      "id": "music-qqmusic", "name": "QQ音乐 / 酷狗", "cat": "媒体创作", "risk": "safe",
+      "desc": "音乐客户端试听缓存",
+      "why": "Cache 目录可清，下载的歌单独存",
+      "paths": ["%APPDATA%/Tencent/QQMusic", "%USERPROFILE%/Documents/我的音乐", "%USERPROFILE%/AppData/Roaming/KuGou"]
+    },
+    {
+      "id": "video-bilibili", "name": "哔哩哔哩客户端", "cat": "媒体创作", "risk": "safe",
+      "desc": "B 站桌面端的离线视频与弹幕缓存",
+      "why": "没在看的离线缓存可清",
+      "paths": ["%APPDATA%/bilibili", "%LOCALAPPDATA%/bilibili"]
+    },
+    {
+      "id": "video-live", "name": "直播软件（OBS/斗鱼/虎牙）", "cat": "媒体创作", "risk": "caution",
+      "desc": "OBS 录像与直播客户端缓存",
+      "why": "OBS 录像默认存 Videos（个人数据）；直播客户端 Cache 可清",
+      "paths": ["%APPDATA%/obs-studio", "%APPDATA%/Douyu", "%LOCALAPPDATA%/Huya"]
+    },
+    {
+      "id": "tool-everything", "name": "Everything 搜索", "cat": "虚拟机与工具", "risk": "safe",
+      "desc": "Everything 的 NTFS 索引数据库（db）",
+      "why": "索引删了会自动重建，一般才几十 MB 不用管",
+      "paths": ["%LOCALAPPDATA%/Everything"]
+    },
+    {
+      "id": "tool-utools", "name": "uTools / Snipaste 等效率工具", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "效率工具的插件与缓存（uTools 插件市场装多了不小）",
+      "why": "不用的插件在应用内卸载；缓存可清",
+      "paths": ["%APPDATA%/uTools", "%LOCALAPPDATA%/uTools", "%APPDATA%/Snipaste"]
+    },
+    {
+      "id": "tool-wallpaper", "name": "Wallpaper Engine 壁纸", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "动态壁纸工坊内容，订阅的动态壁纸单个可达数 GB",
+      "why": "不用的壁纸在库里取消订阅即删",
+      "paths": ["**/steamapps/workshop/content/431960", "%ProgramFiles(x86)%/Steam/steamapps/workshop/content/431960"]
+    },
+    {
+      "id": "tool-remote", "name": "远控工具（向日葵/ToDesk）", "cat": "虚拟机与工具", "risk": "safe",
+      "desc": "远控软件的日志与屏幕缓存",
+      "why": "日志/缓存可清（长期使用能积累几个 GB）",
+      "paths": ["%APPDATA%/SunloginClient", "%PROGRAMDATA%/SunloginClient", "%APPDATA%/ToDesk", "%PROGRAMDATA%/ToDesk"]
+    },
+    {
+      "id": "tool-input", "name": "输入法词库与皮肤", "cat": "虚拟机与工具", "risk": "safe",
+      "desc": "搜狗/百度输入法的词库云缓存与皮肤市场下载",
+      "why": "皮肤/缓存可清；自定义词库删了打字习惯要重学",
+      "paths": ["%APPDATA%/SogouInput", "%USERPROFILE%/AppData/Roaming/Baidu/Input", "%PROGRAMDATA%/SogouInput"]
+    },
+    {
+      "id": "tool-scoop", "name": "Scoop / Chocolatey 包管理器", "cat": "开发工具链", "risk": "caution",
+      "desc": "包管理器安装的应用与下载缓存",
+      "why": "scoop cleanup / choco cleanup 清旧版本缓存；persist 数据别动",
+      "paths": ["%USERPROFILE%/scoop", "%ProgramData%/chocolatey"]
+    },
+    {
+      "id": "driver-intel", "name": "Intel 显卡缓存", "cat": "驱动与硬件", "risk": "safe",
+      "desc": "Intel 核显的着色器与崩溃缓存",
+      "why": "cache 目录可清，自动重建",
+      "paths": ["%LOCALAPPDATA%/Intel"]
+    },
+    {
+      "id": "vm-hyperv", "name": "Hyper-V 虚拟机", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "Hyper-V 的虚拟硬盘（vhdx）与检查点，默认在 ProgramData 或自定义盘",
+      "why": "不用的虚拟机在管理器里删除；检查点合并后空间才回收",
+      "paths": ["%ProgramData%/Microsoft/Windows/Virtual Hard Disks", "%PUBLIC%/Documents/Hyper-V"]
+    },
+    {
+      "id": "vm-sandboxie", "name": "Sandboxie 沙盒", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "沙盒内的快照与文件副本",
+      "why": "不用的沙盒内容可在管理器里删除（Delete Content）",
+      "paths": ["C:/Sandboxie", "%USERPROFILE%/Sandbox"]
+    },
+    {
+      "id": "emu-mumu", "name": "安卓模拟器（MuMu/雷电）", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "安卓模拟器的系统镜像与共享文件夹，单个实例 8~30 GB",
+      "why": "不玩的模拟器走自带卸载器删；共享文件夹里的文件是数据",
+      "paths": ["%ProgramFiles%/Netease/MuMu", "%LOCALAPPDATA%/MuMu", "D:/leidian", "%ProgramFiles%/leidian"]
+    },
+    {
+      "id": "game-ea", "name": "EA App / Origin", "cat": "游戏平台", "risk": "caution",
+      "desc": "EA 游戏库与客户端缓存",
+      "why": "游戏本体不玩了走客户端卸载；缓存可清",
+      "paths": ["%ProgramFiles%/EA Games", "%ProgramFiles%/Electronic Arts", "%ProgramData%/EA", "%LOCALAPPDATA%/Origin"]
+    },
+    {
+      "id": "game-uplay", "name": "育碧 Ubisoft Connect", "cat": "游戏平台", "risk": "caution",
+      "desc": "育碧游戏库（单个 30~90 GB）",
+      "why": "不玩的游戏走客户端卸载",
+      "paths": ["%ProgramFiles%/Ubisoft", "D:/Ubisoft"]
+    },
+    {
+      "id": "game-rockstar", "name": "Rockstar Games", "cat": "游戏平台", "risk": "caution",
+      "desc": "R 星启动器与游戏（GTA/RDR 等）",
+      "why": "游戏本体按需删；启动器很小",
+      "paths": ["%ProgramFiles%/Rockstar Games", "%LOCALAPPDATA%/Rockstar Games"]
+    },
+    {
+      "id": "game-netease", "name": "网易游戏", "cat": "游戏平台", "risk": "caution",
+      "desc": "网易系游戏客户端与下载缓存",
+      "why": "游戏本体按需删，缓存可清",
+      "paths": ["%ProgramFiles%/Netease", "%LOCALAPPDATA%/Netease"]
+    },
+    {
+      "id": "emu-switch", "name": "Switch 模拟器", "cat": "虚拟机与工具", "risk": "caution",
+      "desc": "yuzu/Ryujinx 等模拟器的固件、密钥与游戏镜像",
+      "why": "游戏 ROM 是大头（单个 1~30 GB），不玩了连 keys 一起删",
+      "paths": ["%APPDATA%/yuzu", "%APPDATA%/Ryujinx", "%USERPROFILE%/suyu"]
+    },
+    {
+      "id": "net-idm", "name": "IDM / FDM 下载器", "cat": "网盘与下载", "risk": "caution",
+      "desc": "下载器的任务数据与下载文件",
+      "why": "下载文件自行判断；任务数据库删了列表就没了",
+      "paths": ["%APPDATA%/IDM", "D:/IDM Downloads", "%APPDATA%/FreeDownloadManager"]
+    },
+    {
+      "id": "net-motrix", "name": "Motrix / aria2", "cat": "网盘与下载", "risk": "caution",
+      "desc": "Motrix 下载与会话数据",
+      "why": "下载文件自行判断；session 数据删了任务列表就没了",
+      "paths": ["%APPDATA%/Motrix", "%USERPROFILE%/.aria2"]
+    },
+    {
+      "id": "cloud-dropbox", "name": "Dropbox / 坚果云", "cat": "网盘与下载", "risk": "info",
+      "desc": "同步网盘的本地镜像，开启按需同步后云占位文件几乎不占空间",
+      "why": "同 OneDrive 逻辑：本地镜像大小看实际磁盘占用，不看的旧文件可设为仅在线",
+      "paths": ["%USERPROFILE%/Dropbox", "%USERPROFILE%/Nutstore Files"]
+    },
+    {
+      "id": "notes-obsidian", "name": "Obsidian / Notion 本地库", "cat": "通讯与办公", "risk": "data",
+      "desc": "笔记软件的本地库：Obsidian vault 是纯 Markdown 文件，Notion 本地主要是缓存",
+      "why": "Obsidian 库=你的笔记（可自行备份）；Notion 的 %APPDATA% 缓存可清",
+      "paths": ["%APPDATA%/Obsidian", "%APPDATA%/notion", "%LOCALAPPDATA%/notion"]
+    },
+    {
+      "id": "media-potplayer", "name": "PotPlayer / VLC", "cat": "媒体创作", "risk": "safe",
+      "desc": "播放器的配置与播放缓存",
+      "why": "缓存与缩略图可清，配置别动",
+      "paths": ["%APPDATA%/PotPlayer", "%APPDATA%/vlc", "%LOCALAPPDATA%/PotPlayer"]
+    },
+    {
+      "id": "game-taptap", "name": "TapTap / 好游快爆", "cat": "游戏平台", "risk": "caution",
+      "desc": "手游 PC 端/模拟器分发客户端的下载缓存",
+      "why": "安装包缓存可清",
+      "paths": ["%LOCALAPPDATA%/TapTap", "%APPDATA%/TapTap"]
+    },
+    {
+      "id": "win-defender", "name": "Microsoft Defender 缓存", "cat": "系统与内核", "risk": "caution",
+      "desc": "Defender 的定义更新备份与扫描历史（Scans/History）",
+      "why": "定义更新备份可清（保留最新）；扫描记录删了就没法查历史检出；杀毒引擎别动",
+      "paths": ["%ProgramData%/Microsoft/Windows Defender"],
+      "clean": [{"sub": "Scans/History", "risk": "safe", "note": "扫描历史记录"}]
+    },
+    {
+      "id": "win-search-index", "name": "Windows 搜索索引", "cat": "系统与内核", "risk": "caution",
+      "desc": "开始菜单/文件搜索的索引数据库（Windows.edb），长期使用可到几 GB",
+      "why": "搜索变慢或损坏时：控制面板→索引选项→重建，会自动重新索引；直接删文件服务会重建但先停服务",
+      "paths": ["%ProgramData%/Microsoft/Search/Data"]
+    },
+    {
+      "id": "win-thumbcache", "name": "缩略图缓存", "cat": "系统与内核", "risk": "safe",
+      "desc": "文件管理器里的图片/视频缩略图缓存（thumbcache_*.db）",
+      "why": "可整体清，打开图片文件夹时会自动重建",
+      "paths": ["%LOCALAPPDATA%/Microsoft/Windows/Explorer"]
+    },
+    {
+      "id": "user-fonts", "name": "用户自装字体", "cat": "个人目录", "risk": "caution",
+      "desc": "Win10 1809+ 用户级字体安装在这里（不用管理员权限）",
+      "why": "设计用的字体别乱删；装了一堆没用过的字体可在此清理",
+      "paths": ["%LOCALAPPDATA%/Microsoft/Windows/Fonts"]
+    },
+    {
+      "id": "user-gamesaves", "name": "游戏存档", "cat": "游戏平台", "risk": "data",
+      "desc": "单机游戏存档散落处：%APPDATA% 各游戏目录、Documents/My Games、%LOCALAPPDATA%/GameSave 等",
+      "why": "删游戏前先确认存档位置——成就/进度在云端的没事，纯单机存档删了就真没了",
+      "paths": ["%USERPROFILE%/Documents/My Games", "%LOCALAPPDATA%/GameSave", "%APPDATA%/Skyrim", "%APPDATA%/EldenRing"]
+    },
+    {
+      "id": "dev-dotnet-cache", "name": ".NET http 缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "NuGet 的 http 包缓存（不同于全局 packages）",
+      "why": "直接删，restore 自动重下",
+      "paths": ["%LOCALAPPDATA%/NuGet"]
+    },
+    {
+      "id": "dev-vscode-workspace", "name": "VS Code 工作区数据", "cat": "开发工具链", "risk": "caution",
+      "desc": "workspaceStorage：每个打开过的文件夹都存一份工作区状态，项目多了能到几 GB",
+      "why": "已删除项目对应的工作区目录可清（按时间排序最老的通常都是弃坑项目）",
+      "paths": ["%APPDATA%/Code/User/workspaceStorage"]
+    },
+    {
+      "id": "dev-electron-builder", "name": "Electron 打包缓存", "cat": "开发工具链", "risk": "safe",
+      "desc": "electron-builder 打包时下载的 Electron 本体与构建工具缓存",
+      "why": "直接删，下次打包自动重下",
+      "paths": ["%LOCALAPPDATA%/electron-builder/Cache", "%LOCALAPPDATA%/electron/Cache"]
+    },
+    {
+      "id": "dev-unity", "name": "Unity 引擎", "cat": "开发工具链", "risk": "caution",
+      "desc": "Unity Hub 管理的多个 Editor 版本（每个 5~10 GB）与项目的 Library 资产缓存",
+      "why": "只用一个版本的 Editor 其他可卸；项目 Library 删了会全量重新导入",
+      "paths": ["%ProgramFiles%/Unity/Hub/Editor", "%USERPROFILE%/AppData/Roaming/Unity"]
+    },
+    {
+      "id": "dev-unreal", "name": "虚幻引擎", "cat": "开发工具链", "risk": "caution",
+      "desc": "Unreal Engine 本体（单版本 30~50 GB）与项目的 DerivedDataCache",
+      "why": "不开发 UE 就整体卸载；DCC 缓存可删（重新着色器编译慢一次）",
+      "paths": ["%ProgramFiles%/Epic Games/UE_*", "**/DerivedDataCache"]
+    },
+    {
+      "id": "dev-godot", "name": "Godot 引擎项目", "cat": "开发工具链", "risk": "caution",
+      "desc": "Godot 项目的导入缓存（.godot 目录）",
+      "why": "缓存可删（重新导入），工程场景文件别动",
+      "paths": ["**/.godot"]
+    },
+    {
+      "id": "media-dcim", "name": "相机/无人机素材", "cat": "个人数据", "risk": "data",
+      "desc": "DCIM 目录是相机、无人机（DJI）、手机导出的原始素材，4K 素材单个项目几十 GB 很常见",
+      "why": "已完成剪辑并归档成片的原始素材，确认成片保留后即可回收——这是视频创作者最大的可回收空间",
+      "paths": ["**/DCIM", "**/DJI_*"]
+    },
+    {
+      "id": "cloud-baidu-sync", "name": "百度网盘同步空间", "cat": "网盘与下载", "risk": "info",
+      "desc": "百度网盘「同步空间」的本地镜像目录",
+      "why": "同步镜像逻辑同 OneDrive：本地占用≈云端文件总大小，确认云端完整后可取消同步回收",
+      "paths": ["%USERPROFILE%/百度网盘同步空间", "D:/百度网盘同步空间"]
+    },
+    {
+      "id": "im-tencent-docs", "name": "腾讯文档/金山文档", "cat": "通讯与办公", "risk": "safe",
+      "desc": "在线文档客户端的本地缓存",
+      "why": "文档都在云端，本地缓存可清",
+      "paths": ["%APPDATA%/Tencent/Tencent Docs", "%LOCALAPPDATA%/Tencent/Tencent Docs", "%APPDATA%/kingsoft/docs"]
+    }
+  ]
+}

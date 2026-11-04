@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"disklens/internal/history"
+	"disklens/internal/kb"
 	"disklens/internal/scanner"
 )
 
@@ -22,6 +23,8 @@ func Run(args []string) int {
 		return cmdCompare(args[1:])
 	case "list":
 		return cmdList()
+	case "explain":
+		return cmdExplain(args[1:])
 	case "help", "-h", "--help":
 		printHelp()
 		return 0
@@ -40,10 +43,12 @@ func printHelp() {
   disklens scan [路径...]      扫描（默认: 全部固定磁盘），结果存入历史
   disklens compare             对比最近两次扫描，看谁长大了
   disklens list                列出历史扫描
+  disklens explain <路径>      解释这个文件夹是干什么的、能不能删
 
 示例:
   disklens scan C:\ D:\
   disklens compare --min-gb 1
+  disklens explain "C:\Program Files\miHoYo Launcher"
 `)
 }
 
@@ -274,7 +279,49 @@ func cmdList() int {
 			humanBytes(snap.Meta.Totals.Bytes),
 			snap.Meta.DurationSec)
 	}
-	_ = filepath.Separator
+	return 0
+}
+
+func cmdExplain(argv []string) int {
+	if len(argv) == 0 {
+		fmt.Println("用法: disklens explain <路径>")
+		return 2
+	}
+	raw := strings.Trim(strings.Join(argv, " "), `"`)
+	path := filepath.Clean(raw)
+	hits := kb.Match(path)
+	if len(hits) == 0 {
+		fmt.Printf("知识库中没有「%s」的条目。\n提示: 自定义目录可编辑 %%APPDATA%%\\DiskLens\\kb-user.json 扩展知识库。\n", path)
+		return 0
+	}
+	fmt.Printf("知识库解释: %s\n", path)
+	for i, h := range hits {
+		e := h.Entry
+		if i > 0 {
+			fmt.Println()
+		}
+		fmt.Printf("\n▶ %s  %s  %s\n", e.Name, kb.RiskMark(e.Risk), e.Cat)
+		fmt.Printf("  %s\n", e.Desc)
+		fmt.Printf("  判断依据: %s\n", e.Why)
+		if len(h.Exists) > 0 {
+			fmt.Println("  本机落盘点（广度连接）:")
+			for _, p := range h.Exists {
+				fmt.Printf("    · %s\n", p)
+			}
+		}
+		for _, rel := range e.Related {
+			fmt.Printf("  关联: %s\n", rel.Note)
+			for _, p := range rel.Paths {
+				fmt.Printf("    · %s\n", p)
+			}
+		}
+		if len(e.Clean) > 0 {
+			fmt.Println("  可清理子项:")
+			for _, c := range e.Clean {
+				fmt.Printf("    · %s  %s\n    %s\n", c.Sub, kb.RiskMark(c.Risk), c.Note)
+			}
+		}
+	}
 	return 0
 }
 
