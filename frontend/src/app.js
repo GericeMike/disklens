@@ -110,6 +110,7 @@ async function renderOverview() {
     </section>`;
 
   $('#btn-rescan').addEventListener('click', openScanModal);
+  watchTreemapSize();
   if (!d.ready) {
     $('#drives').innerHTML = `<div class="empty" style="grid-column:1/-1;">还没有扫描数据 —— 点击「重新扫描」开始</div>`;
     $('#treemap').innerHTML = '';
@@ -132,6 +133,22 @@ async function renderOverview() {
   renderClean();
   await loadTreemap(state.treemapRoot);
   renderGrowth();
+}
+
+// 地图尺寸跟随面板实际大小（窗口缩放/布局变化时重绘，消除“地图下方空白”）
+let tmResizeObserver = null;
+let tmResizeTimer = 0;
+function watchTreemapSize() {
+  const box = $('#treemap');
+  if (!box) return;
+  if (tmResizeObserver) tmResizeObserver.disconnect();
+  tmResizeObserver = new ResizeObserver(() => {
+    clearTimeout(tmResizeTimer);
+    tmResizeTimer = setTimeout(() => {
+      if (state.treemapPath) loadTreemap(state.treemapPath);
+    }, 160);
+  });
+  tmResizeObserver.observe(box);
 }
 
 function renderDrives(drives, selected) {

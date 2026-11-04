@@ -127,11 +127,11 @@ html[data-style="terminal"] .style-switch button[aria-pressed="true"] { backgrou
 
 /* ---------- 网格: 一个 gutter 值，横竖一致 ---------- */
 .grid-mid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap); align-items: stretch; margin-bottom: var(--gap); }
-/* 地图 + 当前目录列表 双栏（左地图右列表联动）；固定视口高度，右列表内部滚动 */
+/* 地图 + 当前目录列表 双栏（左地图右列表联动）；两栏均为固定高度滚动视口 */
 .grid-map { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap); align-items: stretch; margin-bottom: var(--gap); }
 .grid-map .panel { display: flex; flex-direction: column; min-width: 0; }
-.grid-map .panel .panel-body { flex: 1; min-height: 0; height: 520px; overflow: hidden; }
-.grid-map #dirlist { height: 520px; overflow-y: auto; padding-right: 6px; overscroll-behavior: contain; scrollbar-width: auto; scrollbar-color: var(--muted) var(--raised); }
+.grid-map .panel .panel-body { flex: 1; min-height: 0; height: clamp(420px, calc(100vh - 390px), 680px); overflow: auto; }
+.grid-map #dirlist { height: 100%; overflow-y: auto; padding-right: 6px; overscroll-behavior: contain; scrollbar-width: auto; scrollbar-color: var(--muted) var(--raised); }
 .grid-map #dirlist::-webkit-scrollbar { width: 12px; }
 .grid-map #dirlist::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 6px; border: 3px solid var(--surface); }
 .grid-map #dirlist::-webkit-scrollbar-thumb:hover { background: var(--text); }
