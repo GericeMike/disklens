@@ -28,10 +28,13 @@ type CleanPath struct {
 }
 
 // BuildCleanSummary 遍历扫描树，把知识库命中的"安全/谨慎"目录聚合成可清理清单。
-// minSize 过滤小目录；maxEntries 限制条数。
-func BuildCleanSummary(res *scanner.Result, minSize int64, maxEntries int) []CleanSummaryEntry {
+// minSize 过滤小目录；maxEntries 限制条数；drivePrefix（如 "C:"）非空时只统计该盘，空串统计全部。
+func BuildCleanSummary(res *scanner.Result, minSize int64, maxEntries int, drivePrefix string) []CleanSummaryEntry {
 	if res == nil {
 		return nil
+	}
+	if drivePrefix != "" {
+		drivePrefix = strings.ToUpper(strings.TrimSuffix(drivePrefix, `\`) + `\`)
 	}
 	agg := map[string]*CleanSummaryEntry{}
 	var walk func(n *scanner.Node, prefix string, depth int)
@@ -73,6 +76,9 @@ func BuildCleanSummary(res *scanner.Result, minSize int64, maxEntries int) []Cle
 		}
 	}
 	for _, r := range res.Roots {
+		if drivePrefix != "" && !strings.HasPrefix(strings.ToUpper(r.Name), drivePrefix) {
+			continue
+		}
 		rootPrefix := strings.TrimSuffix(r.Name, `\`)
 		for _, c := range r.Children {
 			walk(c, rootPrefix, 1)

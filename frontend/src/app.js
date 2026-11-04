@@ -182,6 +182,7 @@ function renderDrives(drives, selected) {
         l.textContent = `${drives[j].letter} 磁盘${j === i ? ' · 正在查看' : ''}`;
       });
       loadTreemap(d.letter);
+      renderClean(d.letter); // 可清理项跟随当前所选盘
     });
   });
 }
@@ -203,16 +204,18 @@ function renderTypes(types) {
   });
 }
 
-async function renderClean() {
+async function renderClean(drive) {
   const el = $('#clean-rows');
+  const cur = drive || state.treemapRoot || '';
   let items;
   if (!state.demo) {
-    items = await api().GetCleanSummary();
+    items = await api().GetCleanSummary(cur);
   } else {
+    const pre = (cur || '').replace(/\\+$/, '').toUpperCase();
     items = demoClean.map((c, i) => ({
       entryId: 'demo' + i, name: c.name, risk: c.risk, why: c.reason,
       totalSize: c.size * 1024 ** 3, paths: [{ path: c.where, size: c.size * 1024 ** 3 }],
-    }));
+    })).filter(c => !pre || String(c.paths[0]?.path || '').toUpperCase().startsWith(pre));
   }
   const total = (items || []).filter(i => i.risk === 'safe').reduce((s, i) => s + i.totalSize, 0);
   $('#clean-total').textContent = items && items.length ? `🟢项合计 ${fmtGB(total)}` : '';
@@ -493,22 +496,55 @@ async function openExplain(path) {
     body.innerHTML = `
       <div class="ex-block"><div class="ex-head"><b>${esc(nodeName(path))}</b></div>
       <div class="ex-desc">知识库还没有这个目录的条目。</div>
-      <div class="ex-why">可在 %APPDATA%\\DiskLens\\kb-user.json 里添加自定义条目；AI 解释功能上线后会自动兜底。</div></div>`;
+      <div class="ex-why">可在 %APPDATA%\\DiskLens\\kb-user.json 里添加自定义条目；AI 解释功能上线后会自动兜底。</div>
+      ${state.demo ? '' : `<div class="ex-label">本机路径</div>
+      <ul class="ex-paths"><li><span class="p" title="${esc(path)}">${esc(path)}</span><button class="ex-open" data-open="${esc(path)}" title="在资源管理器中打开">打开</button></li></ul>`}</div>`;
+    body.querySelectorAll('.ex-open').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        btn.disabled = true;
+        try { await api().OpenFolder(btn.dataset.open); }
+        catch (err) { console.warn('打开失败:', err); }
+        finally { btn.disabled = false; }
+      });
+    });
     return;
   }
-  body.innerHTML = hits.map((h, i) => `
+  body.innerHTML = hits.map((h, i) => {
+    // 落盘列表 = 请求路径（置顶，含 __self 大小） ∪ 知识库命中的其他落盘点
+    const seen = new Set();
+    const rows = [];
+    const selfSize = h.sizes && h.sizes['__self'];
+    rows.push({ p: path, size: typeof selfSize === 'number' ? selfSize : null, self: true });
+    seen.add(String(path).toLowerCase());
+    for (const p of (h.exists || [])) {
+      if (seen.has(String(p).toLowerCase())) continue;
+      seen.add(String(p).toLowerCase());
+      rows.push({ p, size: h.sizes && h.sizes[p] ? h.sizes[p] : null });
+    }
+    return `
     <div class="ex-block">
       <div class="ex-head"><b>${esc(h.name)}</b>${riskPill(h.risk)}<span class="pill" style="background:var(--pill-neutral-bg);color:var(--pill-neutral-ink);">${esc(h.cat)}</span></div>
       <div class="ex-desc">${esc(h.desc)}</div>
       <div class="ex-why">${esc(h.why)}</div>
-      ${(h.exists || []).length ? `<div class="ex-label">本机落盘点（广度连接）</div>
-        <ul class="ex-paths">${h.exists.map(p => `
-          <li><span class="p">${esc(p)}</span><span class="s num">${h.sizes && h.sizes[p] ? fmtGB(h.sizes[p]) : ''}</span></li>`).join('')}</ul>` : ''}
+      ${rows.length ? `<div class="ex-label">本机落盘点（广度连接）</div>
+        <ul class="ex-paths">${rows.map(r => `
+          <li><span class="p" title="${esc(r.p)}">${esc(r.p)}</span><span class="s num">${r.size ? fmtGB(r.size) : ''}</span>${state.demo ? '' : `<button class="ex-open" data-open="${esc(r.p)}" title="在资源管理器中打开">打开</button>`}</li>`).join('')}</ul>` : ''}
       ${(h.clean || []).length ? `<div class="ex-label">可清理子项</div>
         <ul class="ex-clean">${h.clean.map(c => `<li>${esc(c.sub)} ${riskPill(c.risk)}<br><span style="color:var(--muted);font-size:var(--fs-small);">${esc(c.note)}</span></li>`).join('')}</ul>` : ''}
       ${(h.related || []).map(r => `<div class="ex-label">关联：${esc(r.note || '相关位置')}</div>
-        <ul class="ex-paths">${(r.paths || []).map(p => `<li><span class="p">${esc(p)}</span></li>`).join('')}</ul>`).join('')}
-    </div>`).join('');
+        <ul class="ex-paths">${(r.paths || []).map(p => `<li><span class="p">${esc(p)}</span><button class="ex-open" data-open="${esc(p)}" title="在资源管理器中打开">打开</button></li>`).join('')}</ul>`).join('')}
+    </div>`;
+  }).join('');
+  body.querySelectorAll('.ex-open').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      btn.disabled = true;
+      try { await api().OpenFolder(btn.dataset.open); }
+      catch (err) { console.warn('打开失败:', err); }
+      finally { btn.disabled = false; }
+    });
+  });
 }
 
 function closeExplain() {

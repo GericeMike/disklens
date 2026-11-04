@@ -213,7 +213,11 @@ func Scan(opt Options) (*Result, error) {
 func (s *scanner) processDir(ns *nodeState, sh *shardStat) {
 	entries, err := os.ReadDir(ns.node.Path0)
 	if err != nil {
+		// 无法访问（权限等）：按"空目录完成"处理。若不置 ownDone，
+		// tryComplete 会直接 return，本节点 pending 卡死，整条祖先链不再级联，
+		// 表现为中间目录（如 C:\Users）丢失全部子树字节。
 		s.noteError(err, ns.node.Path0)
+		atomic.StoreInt32(&ns.ownDone, 1)
 		s.tryComplete(ns)
 		if s.inFlight.Add(-1) == 0 {
 			s.queue.close()

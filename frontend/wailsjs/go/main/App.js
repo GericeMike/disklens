@@ -14,8 +14,8 @@ export function GetChildren(arg1) {
   return window['go']['main']['App']['GetChildren'](arg1);
 }
 
-export function GetCleanSummary() {
-  return window['go']['main']['App']['GetCleanSummary']();
+export function GetCleanSummary(arg1) {
+  return window['go']['main']['App']['GetCleanSummary'](arg1);
 }
 
 export function GetDrives() {
@@ -40,6 +40,10 @@ export function ListHistoryScans() {
 
 export function LoadLatestScan() {
   return window['go']['main']['App']['LoadLatestScan']();
+}
+
+export function OpenFolder(arg1) {
+  return window['go']['main']['App']['OpenFolder'](arg1);
 }
 
 export function StartScan(arg1) {

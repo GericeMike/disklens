@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -329,12 +331,24 @@ func (a *App) ExplainPath(path string) []KBHitOut {
 	return out
 }
 
-// GetCleanSummary 知识库驱动的可清理汇总
-func (a *App) GetCleanSummary() []kb.CleanSummaryEntry {
+// GetCleanSummary 知识库驱动的可清理汇总；drive 如 "C:\"，空串=全部盘
+func (a *App) GetCleanSummary(drive string) []kb.CleanSummaryEntry {
 	a.mu.Lock()
 	res := a.last
 	a.mu.Unlock()
-	return kb.BuildCleanSummary(res, 200<<20, 20) // ≥200MB 才进清单
+	return kb.BuildCleanSummary(res, 200<<20, 20, drive) // ≥200MB 才进清单
+}
+
+// OpenFolder 在资源管理器中打开文件夹（用户主动触发；仅本机窗口，不联网）
+func (a *App) OpenFolder(path string) error {
+	if path == "" {
+		return fmt.Errorf("路径为空")
+	}
+	if _, err := os.Stat(path); err != nil {
+		return fmt.Errorf("路径不存在: %s", path)
+	}
+	// explorer 打开目录；explorer 的返回码不可靠，只 Start 不 Wait
+	return exec.Command("explorer.exe", path).Start()
 }
 
 // ListHistoryScans 历史列表（新→旧）

@@ -10,7 +10,7 @@ export function ExplainPath(arg1:string):Promise<Array<main.KBHitOut>>;
 
 export function GetChildren(arg1:string):Promise<Array<main.TreeNode>>;
 
-export function GetCleanSummary():Promise<Array<kb.CleanSummaryEntry>>;
+export function GetCleanSummary(arg1:string):Promise<Array<kb.CleanSummaryEntry>>;
 
 export function GetDrives():Promise<Array<main.DriveOption>>;
 
@@ -23,5 +23,7 @@ export function IsScanning():Promise<boolean>;
 export function ListHistoryScans():Promise<Array<main.HistoryItem>>;
 
 export function LoadLatestScan():Promise<boolean>;
+
+export function OpenFolder(arg1:string):Promise<void>;
 
 export function StartScan(arg1:Array<string>):Promise<void>;

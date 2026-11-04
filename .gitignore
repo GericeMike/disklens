@@ -6,6 +6,7 @@ frontend/dist
 
 /_gui-*
 /_step*.png
+/_*.png
 _gui-shot.ps1
 _gui-drive.ps1
 /_scroll-test.png

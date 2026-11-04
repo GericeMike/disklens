@@ -32,7 +32,7 @@ func TestBindingFlow(t *testing.T) {
 	b, _ = json.Marshal(kids)
 	t.Logf("GetChildren[0..2]: %s", trunc(string(b), 300))
 
-	cleans := app.GetCleanSummary()
+	cleans := app.GetCleanSummary("C:")
 	b, _ = json.Marshal(cleans)
 	t.Logf("GetCleanSummary: %s", trunc(string(b), 300))
 

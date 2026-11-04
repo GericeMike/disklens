@@ -193,9 +193,12 @@ html[data-style="terminal"] .drawer.open { box-shadow: -12px 0 28px rgba(0,0,0,.
 .ex-why { font-size: var(--fs-small); color: var(--muted); margin: 4px 0 0; }
 .ex-label { margin-top: 10px; font-size: var(--fs-small); color: var(--muted); }
 .ex-paths { margin: 4px 0 0; padding: 0; list-style: none; }
-.ex-paths li { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: var(--fs-small); }
+.ex-paths li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 3px 0; font-size: var(--fs-small); }
 .ex-paths li .p { color: var(--text); word-break: break-all; }
 .ex-paths li .s { color: var(--muted); flex: none; }
+.ex-open { flex: none; border: 1px solid var(--border); background: var(--raised); color: var(--text); font: inherit; font-size: var(--fs-small); padding: 1px 9px; border-radius: 4px; cursor: pointer; }
+.ex-open:hover { border-color: var(--accent); color: var(--accent); }
+.ex-open:disabled { opacity: 0.45; cursor: default; }
 .ex-clean li { padding: 3px 0; font-size: var(--fs-small); }
 
 /* ---------- 面包屑 ---------- */
