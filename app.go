@@ -132,6 +132,14 @@ func (a *App) GetDrives() []DriveOption {
 	return out
 }
 
+// emit 安全事件推送：ctx 未就绪（如单元测试）时静默跳过
+func (a *App) emit(event string, args ...any) {
+	if a.ctx == nil {
+		return
+	}
+	wailsruntime.EventsEmit(a.ctx, event, args...)
+}
+
 // StartScan 启动后台扫描（异步），进度经事件推送：scan:progress / scan:done / scan:error
 func (a *App) StartScan(roots []string) error {
 	if !a.scanning.CompareAndSwap(false, true) {
@@ -146,15 +154,13 @@ func (a *App) StartScan(roots []string) error {
 			Roots:   roots,
 			Workers: 8,
 			Progress: func(files, dirs int64, bytes int64) {
-				if a.ctx != nil {
-					wailsruntime.EventsEmit(a.ctx, "scan:progress", map[string]any{
-						"files": files, "dirs": dirs, "bytes": bytes,
-					})
-				}
+				a.emit("scan:progress", map[string]any{
+					"files": files, "dirs": dirs, "bytes": bytes,
+				})
 			},
 		})
 		if err != nil {
-			wailsruntime.EventsEmit(a.ctx, "scan:error", err.Error())
+			a.emit("scan:error", err.Error())
 			return
 		}
 		a.mu.Lock()
@@ -162,9 +168,9 @@ func (a *App) StartScan(roots []string) error {
 		a.index = kb.BuildTreeIndex(res)
 		a.mu.Unlock()
 		if _, err := history.Save(res); err != nil {
-			wailsruntime.EventsEmit(a.ctx, "scan:error", "存档失败: "+err.Error())
+			a.emit("scan:error", "存档失败: "+err.Error())
 		}
-		wailsruntime.EventsEmit(a.ctx, "scan:done", map[string]any{
+		a.emit("scan:done", map[string]any{
 			"durationSec": res.Duration,
 			"errors":      res.Errors,
 			"finishedAt":  res.FinishedAt.Format("01-02 15:04"),
@@ -175,6 +181,20 @@ func (a *App) StartScan(roots []string) error {
 
 // IsScanning 是否正在扫描
 func (a *App) IsScanning() bool { return a.scanning.Load() }
+
+// LoadLatestScan 启动时自动加载最近一次存档，恢复概览/树/清理清单
+func (a *App) LoadLatestScan() bool {
+	snap, err := history.LoadLatest()
+	if err != nil {
+		return false
+	}
+	res := history.SnapshotToResult(snap)
+	a.mu.Lock()
+	a.last = res
+	a.index = kb.BuildTreeIndex(res)
+	a.mu.Unlock()
+	return true
+}
 
 // GetOverview 概览页数据
 func (a *App) GetOverview() *OverviewData {
@@ -221,9 +241,13 @@ func (a *App) GetOverview() *OverviewData {
 	// 一句话发现：扫描范围里最大的直接子目录
 	bestName, bestBytes := "", int64(0)
 	for _, r := range res.Roots {
+		sep := ""
+		if !strings.HasSuffix(r.Name, `\`) {
+			sep = `\`
+		}
 		for _, c := range r.Children {
 			if c.Bytes > bestBytes {
-				bestBytes, bestName = c.Bytes, r.Name+c.Name
+				bestBytes, bestName = c.Bytes, r.Name+sep+c.Name
 			}
 		}
 	}

@@ -135,7 +135,7 @@ function renderDrives(drives) {
       <div class="kpi">
         <div class="kpi-label">${esc(d.letter)} 磁盘</div>
         <div class="kpi-value">${fmtGB(d.free)} <small>可用</small></div>
-        <div class="kpi-pct">${d.usedPc.toFixed(1)}% 已用</div>
+        <div class="kpi-pct">${(Number.isFinite(d.usedPct) ? d.usedPct : 0).toFixed(1)}% 已用</div>
         <div class="water">
           <div class="water-track">${ticks}<div class="water-fill${d.atRisk ? ' at-risk' : ''}" style="width:${d.usedPc}%"></div></div>
           <div class="water-ends num"><span>已用 ${fmtGB(used)}</span><span class="free${d.atRisk ? ' at-risk' : ''}">剩 ${fmtGB(d.free)}</span></div>
@@ -224,7 +224,7 @@ async function loadTreemap(path) {
   const box = el;
   const h = box.clientHeight > 300 ? box.clientHeight : 360;
   renderTreemap(box, (kids || []).map(k => ({ name: k.name, value: k.bytes, path: k.path })), {
-    ramps: RAMPS[curStyle()], fmt: fmtGB, height: h,
+    ramps: RAMPS[curStyle()], fmt: fmtGB, unit: '', height: h,
     onSelect: (p) => loadTreemap(p),
   });
   if (!kids || kids.length === 0) {
@@ -504,14 +504,42 @@ function demoOverview() {
   };
 }
 
+// ---------- 错误浮层（前端异常不再静默） ----------
+function showFatal(msg) {
+  let bar = $('#fatal-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'fatal-bar';
+    bar.style.cssText = 'position:fixed;left:12px;bottom:12px;right:12px;max-height:40vh;overflow:auto;z-index:99;background:var(--pill-negative-bg);color:var(--pill-negative-ink);border:1px solid var(--negative);border-radius:8px;padding:10px 14px;font-size:12px;font-family:var(--font-num);white-space:pre-wrap;';
+    document.body.appendChild(bar);
+  }
+  bar.textContent += '[前端错误] ' + msg + '\n';
+}
+window.addEventListener('error', (e) => showFatal((e.message || '') + '\n' + (e.error && e.error.stack ? e.error.stack.split('\n').slice(0, 4).join('\n') : (e.filename || '') + ':' + (e.lineno || ''))));
+window.addEventListener('unhandledrejection', (e) => {
+  const r = e.reason;
+  showFatal(String(r) + (r && r.stack ? '\n' + r.stack.split('\n').slice(0, 4).join('\n') : ''));
+});
+
 // ---------- 启动 ----------
-function boot() {
+async function boot() {
   document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); switchView(a.dataset.view); }));
   $('#drawer-close').addEventListener('click', closeExplain);
   $('#drawer-backdrop').addEventListener('click', closeExplain);
   $('#scan-cancel').addEventListener('click', () => $('#scan-modal').classList.add('hidden'));
   $('#scan-start').addEventListener('click', startScan);
   wireScanEvents();
+  // 真实模式：无内存数据时先尝试自动恢复最近一次存档
+  if (!state.demo) {
+    try {
+      const ov = await api().GetOverview();
+      if (!ov.ready) {
+        await api().LoadLatestScan();
+      }
+    } catch (err) {
+      showFatal('启动恢复失败: ' + String(err));
+    }
+  }
   switchView('overview');
 }
 document.fonts?.ready?.then(boot) ?? boot();

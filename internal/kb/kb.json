@@ -348,7 +348,7 @@
       "id": "ai-comfyui", "name": "ComfyUI / Stable Diffusion 工作流", "cat": "AI 与模型", "risk": "caution",
       "desc": "AI 绘图工作流本体。models 目录（checkpoint/ diffusion_models/ text_encoders/ vae）是空间大户，单个模型 2~30 GB",
       "why": "输出目录可清，模型按需保留——不用的 checkpoint 删掉最省；venv 可随项目重建",
-      "paths": ["C:/AI", "**/ComfyUI", "**/stable-diffusion-webui"],
+      "paths": ["**/ComfyUI", "**/ComfyUI-aki*", "**/stable-diffusion-webui"],
       "related": [{"paths": ["**/venv", "**/.venv"], "note": "ComfyUI 便携包自带 Python 虚拟环境"}]
     },
     {

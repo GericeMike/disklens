@@ -3,3 +3,8 @@ node_modules
 frontend/dist
 *.exe
 .mimosa/
+
+/_gui-*
+/_step*.png
+_gui-shot.ps1
+_gui-drive.ps1

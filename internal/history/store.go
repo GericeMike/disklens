@@ -176,3 +176,47 @@ func loadFile(path string) (*Snapshot, error) {
 	}
 	return &snap, nil
 }
+
+// LoadLatest 读取最新一份存档
+func LoadLatest() (*Snapshot, error) {
+	names, err := List()
+	if err != nil {
+		return nil, err
+	}
+	if len(names) == 0 {
+		return nil, fmt.Errorf("暂无历史存档")
+	}
+	return LoadByName(names[0])
+}
+
+// SnapshotToResult 把裁剪树存档还原为可用的扫描结果（重建各节点完整路径）
+func SnapshotToResult(snap *Snapshot) *scanner.Result {
+	res := &scanner.Result{
+		StartedAt:  snap.Meta.StartedAt,
+		FinishedAt: snap.Meta.FinishedAt,
+		Duration:   snap.Meta.DurationSec,
+		Drives:     snap.Meta.Drives,
+		TopFiles:   snap.TopFiles,
+		TypeStats:  snap.TypeStats,
+		TotalBytes: snap.Meta.Totals.Bytes,
+		TotalFiles: snap.Meta.Totals.Files,
+		TotalDirs:  snap.Meta.Totals.Dirs,
+		Errors:     snap.Meta.Errors,
+	}
+	var rebuild func(n *scanner.Node, prefix string)
+	rebuild = func(n *scanner.Node, prefix string) {
+		n.Path0 = prefix + "\\" + n.Name
+		for _, c := range n.Children {
+			rebuild(c, n.Path0)
+		}
+	}
+	for _, r := range snap.Roots {
+		// 保持存档中的原始根名（可能是盘根，也可能是子目录根），仅重建 Path0 链
+		r.Path0 = r.Name
+		for _, c := range r.Children {
+			rebuild(c, r.Name)
+		}
+	}
+	res.Roots = snap.Roots
+	return res
+}

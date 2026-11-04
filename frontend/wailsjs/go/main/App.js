@@ -38,6 +38,10 @@ export function ListHistoryScans() {
   return window['go']['main']['App']['ListHistoryScans']();
 }
 
+export function LoadLatestScan() {
+  return window['go']['main']['App']['LoadLatestScan']();
+}
+
 export function StartScan(arg1) {
   return window['go']['main']['App']['StartScan'](arg1);
 }

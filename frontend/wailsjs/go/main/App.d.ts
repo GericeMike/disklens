@@ -22,4 +22,6 @@ export function IsScanning():Promise<boolean>;
 
 export function ListHistoryScans():Promise<Array<main.HistoryItem>>;
 
+export function LoadLatestScan():Promise<boolean>;
+
 export function StartScan(arg1:Array<string>):Promise<void>;
