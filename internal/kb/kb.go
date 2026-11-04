@@ -40,15 +40,16 @@ type RelatedPath struct {
 
 // Entry 一条知识
 type Entry struct {
-	ID      string        `json:"id"`
-	Name    string        `json:"name"`
-	Cat     string        `json:"cat"`
-	Desc    string        `json:"desc"`   // 这是干什么的
-	Risk    string        `json:"risk"`   // safe/caution/danger/data/info
-	Why     string        `json:"why"`    // 为什么是这个风险等级
-	Paths   []string      `json:"paths"`  // 落盘点模式（支持 %ENV% 与 **/ 前缀）
-	Clean   []CleanItem   `json:"clean,omitempty"`
-	Related []RelatedPath `json:"related,omitempty"`
+	ID         string        `json:"id"`
+	Name       string        `json:"name"`
+	Cat        string        `json:"cat"`
+	Desc       string        `json:"desc"`   // 这是干什么的
+	Risk       string        `json:"risk"`   // safe/caution/danger/data/info
+	Why        string        `json:"why"`    // 为什么是这个风险等级
+	Paths      []string      `json:"paths"`  // 落盘点模式（支持 %ENV% 与 **/ 前缀）
+	NoSummary  bool          `json:"noSummary,omitempty"` // true=解释性/容器条目，不进可清理汇总
+	Clean      []CleanItem   `json:"clean,omitempty"`
+	Related    []RelatedPath `json:"related,omitempty"`
 }
 
 type database struct {

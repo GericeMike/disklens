@@ -181,13 +181,13 @@
       "paths": ["%USERPROFILE%/Pictures", "%USERPROFILE%/Videos", "%USERPROFILE%/Music"]
     },
     {
-      "id": "user-appdata-roaming", "name": "AppData\\Roaming 说明", "cat": "个人目录", "risk": "caution",
+      "id": "user-appdata-roaming", "name": "AppData\\Roaming 说明", "cat": "个人目录", "risk": "caution", "noSummary": true,
       "desc": "漫游配置区：软件的设置、账号数据、聊天记录索引等",
       "why": "整体不要清；个别软件的 Cache/缓存 子目录可清（本知识库会在你点进具体软件时给出子项建议）",
       "paths": ["%APPDATA%"]
     },
     {
-      "id": "user-appdata-local", "name": "AppData\\Local 说明", "cat": "个人目录", "risk": "caution",
+      "id": "user-appdata-local", "name": "AppData\\Local 说明", "cat": "个人目录", "risk": "caution", "noSummary": true,
       "desc": "本机数据区：软件缓存、浏览器数据、应用安装（Electron 类）、WSL 虚拟盘等都在这",
       "why": "最容易悄悄涨到上百 GB 的区域，逐个软件判断；常见安全清理点：各软件 Cache、Temp、CrashDumps",
       "paths": ["%LOCALAPPDATA%"]

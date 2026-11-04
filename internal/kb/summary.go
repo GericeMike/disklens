@@ -40,20 +40,28 @@ func BuildCleanSummary(res *scanner.Result, minSize int64, maxEntries int) []Cle
 		if depth >= 1 && n.Bytes >= minSize && n.Files > 0 {
 			if hits := Match(p); len(hits) > 0 {
 				h := hits[0]
+				counted := false
 				if h.Entry.Risk == RiskSafe || h.Entry.Risk == RiskCaution {
-					e := agg[h.Entry.ID]
-					if e == nil {
-						e = &CleanSummaryEntry{
-							EntryID: h.Entry.ID, Name: h.Entry.Name, Cat: h.Entry.Cat,
-							Risk: h.Entry.Risk, Why: h.Entry.Why, Clean: h.Entry.Clean,
+					if h.Entry.NoSummary {
+						// 解释性/容器条目：不计数，但继续下钻寻找内部的具体条目
+					} else {
+						e := agg[h.Entry.ID]
+						if e == nil {
+							e = &CleanSummaryEntry{
+								EntryID: h.Entry.ID, Name: h.Entry.Name, Cat: h.Entry.Cat,
+								Risk: h.Entry.Risk, Why: h.Entry.Why, Clean: h.Entry.Clean,
+							}
+							agg[h.Entry.ID] = e
 						}
-						agg[h.Entry.ID] = e
+						// 最顶层命中即按"含全部内容"计入，不再下钻——子目录大小已含在本目录内
+						e.TotalSize += n.Bytes
+						if len(e.Paths) < 6 {
+							e.Paths = append(e.Paths, CleanPath{Path: p, Size: n.Bytes, Files: n.Files})
+						}
+						counted = true
 					}
-					// 最顶层命中即按"含全部内容"计入，不再下钻——子目录大小已含在本目录内
-					e.TotalSize += n.Bytes
-					if len(e.Paths) < 6 {
-						e.Paths = append(e.Paths, CleanPath{Path: p, Size: n.Bytes, Files: n.Files})
-					}
+				}
+				if counted {
 					return
 				}
 			}
