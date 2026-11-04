@@ -50,7 +50,8 @@ export function squarify(items, x, y, w, h) {
 }
 
 // 渲染到容器: theme ramp 由调用方传入（深/浅两套色阶，蓝/teal 同族阶梯）
-export function renderTreemap(el, items, { ramps, fmt, unit = 'GB', height = null }) {
+// items: [{name, value, path?}]；onSelect(path) 提供时点击方块即下钻回调
+export function renderTreemap(el, items, { ramps, fmt, unit = 'GB', height = null, onSelect = null }) {
   const W = Math.max(320, el.clientWidth || 800);
   const H = Math.max(280, height || 360);
   const sorted = [...items].sort((a, b) => b.value - a.value);
@@ -62,17 +63,21 @@ export function renderTreemap(el, items, { ramps, fmt, unit = 'GB', height = nul
   svg.setAttribute('width', W); svg.setAttribute('height', H);
   svg.setAttribute('class', 'treemap-svg');
   svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'D 盘顶层目录占用方块地图');
+  svg.setAttribute('aria-label', '目录占用方块地图');
   for (let i = 0; i < rects.length; i++) {
     const r = rects[i];
     const g = document.createElementNS(ns, 'g');
+    if (onSelect && r.path) {
+      g.style.cursor = 'pointer';
+      g.addEventListener('click', () => onSelect(r.path));
+    }
     const rect = document.createElementNS(ns, 'rect');
     rect.setAttribute('x', r.x); rect.setAttribute('y', r.y);
     rect.setAttribute('width', Math.max(0, r.w)); rect.setAttribute('height', Math.max(0, r.h));
     rect.setAttribute('rx', 2); rect.setAttribute('class', 'tile');
     rect.setAttribute('fill', ramps[Math.min(n - 1, i)]);
     const t = document.createElementNS(ns, 'title');
-    t.textContent = `${r.name} · ${fmt(r.value)} ${unit}`;
+    t.textContent = `${r.name} · ${fmt(r.value)} ${unit}${onSelect && r.path ? '（点击下钻）' : ''}`;
     rect.appendChild(t);
     g.appendChild(rect);
     // 面积足够才放标签（§7 截断规则: 放不下不放，不挤）

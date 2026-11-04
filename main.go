@@ -25,13 +25,14 @@ func main() {
 
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "disklens",
-		Width:  1024,
-		Height: 768,
+		Title:    "盘镜 DiskLens",
+		Width:    1320,
+		Height:   860,
+		MinWidth: 960,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
-		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
+		BackgroundColour: &options.RGBA{R: 23, G: 23, B: 25, A: 1},
 		OnStartup:        app.startup,
 		Bind: []interface{}{
 			app,
