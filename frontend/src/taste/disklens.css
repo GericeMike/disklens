@@ -89,6 +89,9 @@ html[data-style="sheet"] .stamp-canvas { display: none; }
 html[data-style="sheet"] .canvas { padding: 0; }
 
 .kpi-pct { margin-top: 2px; font-size: var(--fs-small); color: var(--muted); font-family: var(--font-num); }
+/* 盘概览作为 treemap 盘切换标签: 选中项按风格带标记线（terminal=1px accent 底线, sheet=2px 墨线） */
+html[data-style="terminal"] .kpis[role="tablist"] .kpi[aria-selected="true"]::after { height: 1px; background: var(--accent); }
+html[data-style="terminal"] .kpis[role="tablist"] .kpi[aria-selected="true"] .kpi-label { color: var(--text); }
 
 /* ---------- 盘水位条 ---------- */
 .water { margin-top: 12px; }

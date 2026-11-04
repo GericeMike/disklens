@@ -114,34 +114,52 @@ async function renderOverview() {
     return;
   }
 
-  renderDrives(d.drives);
+  // treemap: 默认展示占用最大盘的根；盘概览水位条兼任 treemap 的盘切换标签
+  const biggest = [...(d.drives || [])].sort((a, b) => (b.total - b.free) - (a.total - a.free))[0];
+  const rootPath = biggest ? biggest.letter : 'C:\\';
+  if (!state.treemapRoot) {
+    state.treemapRoot = rootPath;
+  }
+  renderDrives(d.drives, state.treemapRoot);
   renderTopFiles(d.topFiles);
   renderTypes(d.typeStats);
   renderClean();
-  // treemap: 默认展示最大盘的根
-  const biggest = [...(d.drives || [])].sort((a, b) => (b.total - b.free) - (a.total - a.free))[0];
-  const rootPath = biggest ? biggest.letter : 'C:\\';
-  state.treemapRoot = rootPath;
-  await loadTreemap(rootPath);
+  await loadTreemap(state.treemapRoot);
   renderGrowth();
 }
 
-function renderDrives(drives) {
+function renderDrives(drives, selected) {
   const wrap = $('#drives');
+  // 盘概览兼任 treemap 的盘切换标签（§5: KPI 作为切换控件，选中项带标记线）
+  wrap.setAttribute('role', 'tablist');
   wrap.innerHTML = (drives || []).map(d => {
     const used = d.total - d.free;
+    const pct = Number.isFinite(d.usedPct) ? d.usedPct : 0;
     const ticks = [25, 50, 75].map(p => `<span class="water-tick" style="left:${p}%"></span>`).join('');
+    const sel = d.letter === selected;
     return `
-      <div class="kpi">
-        <div class="kpi-label">${esc(d.letter)} 磁盘</div>
+      <div class="kpi" role="tab" aria-selected="${sel}" title="点击查看 ${esc(d.letter)} 的方块地图">
+        <div class="kpi-label">${esc(d.letter)} 磁盘${sel ? ' · 正在查看' : ''}</div>
         <div class="kpi-value">${fmtGB(d.free)} <small>可用</small></div>
-        <div class="kpi-pct">${(Number.isFinite(d.usedPct) ? d.usedPct : 0).toFixed(1)}% 已用</div>
+        <div class="kpi-pct">${pct.toFixed(1)}% 已用</div>
         <div class="water">
-          <div class="water-track">${ticks}<div class="water-fill${d.atRisk ? ' at-risk' : ''}" style="width:${d.usedPc}%"></div></div>
+          <div class="water-track">${ticks}<div class="water-fill${d.atRisk ? ' at-risk' : ''}" style="width:${pct}%"></div></div>
           <div class="water-ends num"><span>已用 ${fmtGB(used)}</span><span class="free${d.atRisk ? ' at-risk' : ''}">剩 ${fmtGB(d.free)}</span></div>
         </div>
       </div>`;
   }).join('');
+  wrap.querySelectorAll('.kpi').forEach((cell, i) => {
+    cell.addEventListener('click', () => {
+      const d = drives[i];
+      if (!d || state.treemapRoot === d.letter) return;
+      state.treemapRoot = d.letter;
+      wrap.querySelectorAll('.kpi').forEach((c, j) => c.setAttribute('aria-selected', j === i ? 'true' : 'false'));
+      wrap.querySelectorAll('.kpi-label').forEach((l, j) => {
+        l.textContent = `${drives[j].letter} 磁盘${j === i ? ' · 正在查看' : ''}`;
+      });
+      loadTreemap(d.letter);
+    });
+  });
 }
 
 function renderTopFiles(files) {
