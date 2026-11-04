@@ -101,7 +101,11 @@ export function renderTreemap(el, items, { ramps, fmt, unit = '', height = null,
   for (let i = 0; i < rects.length; i++) {
     const r = rects[i];
     const g = document.createElementNS(ns, 'g');
-    if (onSelect && r.path) {
+    if (r._group && onOpenOthers) {
+      // "其他"聚合方块：点击展开小项专属视图
+      g.style.cursor = 'pointer';
+      g.addEventListener('click', () => onOpenOthers());
+    } else if (onSelect && r.path) {
       g.style.cursor = 'pointer';
       g.addEventListener('click', () => onSelect(r.path));
     }

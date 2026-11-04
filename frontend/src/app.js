@@ -285,10 +285,12 @@ async function loadTreemap(path) {
 
 // "其他 N 项"专属视图: 被聚合的小项独立成图，脱离大项竞争后全部可读可点
 function loadOthersView(basePath, items) {
-  state.treemapOthers = { basePath, items };
+  // items 来自 renderTreemap 的 others 返回值，字段是 {name, value, path}（value 为真实字节）
+  const norm = (items || []).map(k => ({ name: k.name, bytes: k.value, path: k.path }));
+  state.treemapOthers = { basePath, items: norm };
   const el = $('#treemap');
   const h = el.clientHeight > 300 ? el.clientHeight : 460;
-  renderTreemap(el, items.map(k => ({ name: k.name, value: k.bytes, path: k.path })), {
+  renderTreemap(el, norm.map(k => ({ name: k.name, value: k.bytes, path: k.path })), {
     ramps: RAMPS[curStyle()], fmt: fmtGB, unit: '', height: h, scaleExp: 0.55,
     onSelect: (p) => loadTreemap(p), // 点击真实目录 → 回到真实路径视图
   });
@@ -299,13 +301,12 @@ function loadOthersView(basePath, items) {
   html += `<span class="sep">›</span><button aria-current="true">其他 ${items.length} 项</button>`;
   crumb.innerHTML = html;
   crumb.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => loadTreemap(b.dataset.p)));
-  renderDirList(basePath, items, `${basePath} · 小项 ${items.length} 个`);
+  renderDirList(basePath, norm, `${basePath} · 小项 ${norm.length} 个`);
 }
 
 // 当前目录文字列表: 与左侧地图同步，点击行下钻，ⓘ 打开解释抽屉
 function renderDirList(path, kids, titleOverride) {
   $('#dl-title').textContent = titleOverride || `${path} · ${kids.length} 个子目录`;
-  $('#dl-title').textContent = `${path} · ${kids.length} 个子目录`;
   const el = $('#dirlist');
   if (!kids.length) {
     el.innerHTML = `<div class="empty-inline">此目录没有子目录</div>`;
