@@ -131,10 +131,11 @@ html[data-style="terminal"] .style-switch button[aria-pressed="true"] { backgrou
 .grid-map { display: grid; grid-template-columns: 2fr 1fr; gap: var(--gap); align-items: stretch; margin-bottom: var(--gap); }
 .grid-map .panel { display: flex; flex-direction: column; min-width: 0; }
 .grid-map .panel .panel-body { flex: 1; min-height: 0; height: 520px; overflow: hidden; }
-.grid-map #dirlist { height: 520px; overflow-y: auto; padding-right: 6px; scrollbar-width: thin; scrollbar-color: var(--control) transparent; }
-.grid-map #dirlist::-webkit-scrollbar { width: 8px; }
-.grid-map #dirlist::-webkit-scrollbar-thumb { background: var(--control); border-radius: 4px; }
-.grid-map #dirlist::-webkit-scrollbar-track { background: transparent; }
+.grid-map #dirlist { height: 520px; overflow-y: auto; padding-right: 6px; overscroll-behavior: contain; scrollbar-width: auto; scrollbar-color: var(--muted) var(--raised); }
+.grid-map #dirlist::-webkit-scrollbar { width: 12px; }
+.grid-map #dirlist::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 6px; border: 3px solid var(--surface); }
+.grid-map #dirlist::-webkit-scrollbar-thumb:hover { background: var(--text); }
+.grid-map #dirlist::-webkit-scrollbar-track { background: var(--raised); border-radius: 6px; }
 .dirlist { display: grid; }
 .dir-row { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 7px 0; cursor: pointer; border-radius: 4px; }
 .dir-row:hover { background: var(--raised); }

@@ -8,3 +8,6 @@ frontend/dist
 /_step*.png
 _gui-shot.ps1
 _gui-drive.ps1
+/_scroll-test.png
+/_cua-*.png
+/_cua-scrollinto.png
