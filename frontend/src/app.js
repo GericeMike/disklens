@@ -246,9 +246,9 @@ async function loadTreemap(path) {
   crumb.querySelectorAll('button').forEach(b => b.addEventListener('click', () => loadTreemap(b.dataset.p)));
 
   const box = el;
-  const h = box.clientHeight > 300 ? box.clientHeight : 360;
+  const h = box.clientHeight > 300 ? box.clientHeight : 460;
   renderTreemap(box, (kids || []).map(k => ({ name: k.name, value: k.bytes, path: k.path })), {
-    ramps: RAMPS[curStyle()], fmt: fmtGB, unit: '', height: h,
+    ramps: RAMPS[curStyle()], fmt: fmtGB, unit: '', height: h, scaleExp: 0.55,
     onSelect: (p) => loadTreemap(p),
   });
   renderDirList(path, kids || []);

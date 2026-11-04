@@ -51,11 +51,19 @@ export function squarify(items, x, y, w, h) {
 
 // 渲染到容器: theme ramp 由调用方传入（深/浅两套色阶，蓝/teal 同族阶梯）
 // items: [{name, value, path?}]；onSelect(path) 提供时点击方块即下钻回调
-export function renderTreemap(el, items, { ramps, fmt, unit = 'GB', height = null, onSelect = null }) {
+// scaleExp: 面积缓比例指数（0.55 = 开根号式压缩，避免超大项独占半屏、小项不可读；
+//           排序仍按真实值从大到小，标签/悬浮提示显示真实大小）
+export function renderTreemap(el, items, { ramps, fmt, unit = 'GB', height = null, onSelect = null, scaleExp = 1 }) {
   const W = Math.max(320, el.clientWidth || 800);
   const H = Math.max(280, height || 360);
   const sorted = [...items].sort((a, b) => b.value - a.value);
-  const rects = squarify(sorted, 0.5, 0.5, W - 1, H - 1);
+  if (scaleExp !== 1) {
+    for (const it of sorted) it._scaled = Math.pow(Math.max(0, it.value), scaleExp);
+  }
+  const layoutItems = scaleExp !== 1
+    ? sorted.map(it => ({ ...it, value: it._scaled }))
+    : sorted;
+  const rects = squarify(layoutItems, 0.5, 0.5, W - 1, H - 1);
   const n = ramps.length;
   const ns = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(ns, 'svg');
@@ -77,10 +85,12 @@ export function renderTreemap(el, items, { ramps, fmt, unit = 'GB', height = nul
     rect.setAttribute('rx', 2); rect.setAttribute('class', 'tile');
     rect.setAttribute('fill', ramps[Math.min(n - 1, i)]);
     const t = document.createElementNS(ns, 'title');
-    t.textContent = `${r.name} · ${fmt(r.value)} ${unit}${onSelect && r.path ? '（点击下钻）' : ''}`;
+    const real = sorted.find(s => s.name === r.name);
+    t.textContent = `${r.name} · ${fmt(real ? real.value : r.value)} ${unit}${onSelect && r.path ? '（点击下钻）' : ''}`;
     rect.appendChild(t);
     g.appendChild(rect);
-    // 面积足够才放标签（§7 截断规则: 放不下不放，不挤）
+    // 面积足够才放标签（§7 截断规则: 放不下不放，不挤）；数值显示真实大小而非缩放值
+    const realValue = real ? real.value : r.value;
     if (r.w > 64 && r.h > 40) {
       const name = document.createElementNS(ns, 'text');
       name.setAttribute('x', r.x + 10); name.setAttribute('y', r.y + 20);
@@ -91,13 +101,13 @@ export function renderTreemap(el, items, { ramps, fmt, unit = 'GB', height = nul
       const size = document.createElementNS(ns, 'text');
       size.setAttribute('x', r.x + 10); size.setAttribute('y', r.y + 36);
       size.setAttribute('class', 'tsize');
-      size.textContent = `${fmt(r.value)} ${unit}`;
+      size.textContent = `${fmt(realValue)} ${unit}`.trimEnd();
       g.appendChild(size);
     } else if (r.w > 30 && r.h > 20) {
       const size = document.createElementNS(ns, 'text');
       size.setAttribute('x', r.x + 6); size.setAttribute('y', r.y + 14);
       size.setAttribute('class', 'tsize');
-      size.textContent = fmt(r.value);
+      size.textContent = fmt(realValue);
       g.appendChild(size);
     }
     svg.appendChild(g);
