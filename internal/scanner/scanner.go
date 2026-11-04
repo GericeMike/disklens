@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -36,11 +37,55 @@ func (h fileHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 func (h *fileHeap) Push(x any)        { *h = append(*h, x.(FileInfo)) }
 func (h *fileHeap) Pop() any          { old := *h; n := len(old); it := old[n-1]; *h = old[:n-1]; return it }
 
+// taskQueue 无界任务队列（sync.Cond），worker 既是生产者也是消费者，
+// 有界 channel 会因"全员阻塞在发送"而死锁，故必须无界。
+type taskQueue struct {
+	mu     sync.Mutex
+	cond   *sync.Cond
+	items  []*nodeState
+	closed bool
+}
+
+func newTaskQueue() *taskQueue {
+	q := &taskQueue{}
+	q.cond = sync.NewCond(&q.mu)
+	return q
+}
+
+func (q *taskQueue) push(ns *nodeState) {
+	q.mu.Lock()
+	q.items = append(q.items, ns)
+	q.cond.Signal()
+	q.mu.Unlock()
+}
+
+func (q *taskQueue) pop() (*nodeState, bool) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	for len(q.items) == 0 && !q.closed {
+		q.cond.Wait()
+	}
+	if len(q.items) == 0 {
+		return nil, false
+	}
+	it := q.items[0]
+	q.items = q.items[1:]
+	return it, true
+}
+
+func (q *taskQueue) close() {
+	q.mu.Lock()
+	q.closed = true
+	q.cond.Broadcast()
+	q.mu.Unlock()
+}
+
 type nodeState struct {
-	node    *Node
-	parent  *nodeState
-	pending int32 // 未完成子目录数
-	ownDone int32 // 本目录条目处理完成标记
+	node      *Node
+	parent    *nodeState
+	pending   int32 // 未完成子目录数
+	ownDone   int32 // 本目录条目处理完成标记
+	completed int32 // 完成级联已执行标记（CAS 防重）
 }
 
 type shardStat struct {
@@ -51,8 +96,8 @@ type shardStat struct {
 
 type scanner struct {
 	opt       Options
-	tasks     chan *nodeState
-	inFlight  atomic.Int64 // 未完成目录数；归零即关闭任务通道
+	queue     *taskQueue
+	inFlight  atomic.Int64 // 未完成目录数；归零即关闭队列
 	wg        sync.WaitGroup
 	shards    []*shardStat
 	roots     []*Node
@@ -71,11 +116,7 @@ func Scan(opt Options) (*Result, error) {
 	if opt.Workers <= 0 {
 		opt.Workers = 8
 	}
-	s := &scanner{
-		opt:   opt,
-		tasks: make(chan *nodeState, 4096),
-		top:   make(fileHeap, 0, topFilesKeep),
-	}
+	s := &scanner{opt: opt, queue: newTaskQueue(), top: make(fileHeap, 0, topFilesKeep)}
 	for i := 0; i < opt.Workers; i++ {
 		s.shards = append(s.shards, &shardStat{bytes: map[string]int64{}, files: map[string]int64{}})
 	}
@@ -84,14 +125,6 @@ func Scan(opt Options) (*Result, error) {
 	res := &Result{StartedAt: time.Now()}
 	res.Drives = probeDrives(opt.Roots)
 
-	// 先入队根（每个根占 1 个 in-flight），再启动 worker，最后主 goroutine 等待归零
-	for _, root := range opt.Roots {
-		p := normalizeRoot(root)
-		rn := &Node{Name: p, Path0: p}
-		s.roots = append(s.roots, rn)
-		s.inFlight.Add(1)
-		s.tasks <- &nodeState{node: rn}
-	}
 	progressDone := make(chan struct{})
 	if opt.Progress != nil {
 		go func() {
@@ -107,12 +140,49 @@ func Scan(opt Options) (*Result, error) {
 			}
 		}()
 	}
+	// 停滞看门狗：90 秒无任何文件进展 → 转储全部 goroutine 堆栈并退出（死锁自诊断）
+	go func() {
+		lastFiles, stallTicks := int64(-1), 0
+		t := time.NewTicker(15 * time.Second)
+		defer t.Stop()
+		for {
+			select {
+			case <-progressDone:
+				return
+			case <-t.C:
+				cur := s.totalFiles.Load()
+				if cur == lastFiles {
+					stallTicks++
+				} else {
+					stallTicks, lastFiles = 0, cur
+				}
+				if stallTicks >= 6 {
+					buf := make([]byte, 1<<20)
+					n := runtime.Stack(buf, true)
+					fmt.Fprintf(os.Stderr, "\n[盘镜] 扫描停滞 90 秒，转储堆栈诊断:\n%s\n", buf[:n])
+					os.Exit(3)
+				}
+			}
+		}
+	}()
+
+	for _, root := range opt.Roots {
+		p := normalizeRoot(root)
+		rn := &Node{Name: p, Path0: p}
+		s.roots = append(s.roots, rn)
+		s.inFlight.Add(1)
+		s.queue.push(&nodeState{node: rn})
+	}
 	for i := 0; i < opt.Workers; i++ {
 		s.wg.Add(1)
 		go func(idx int) {
 			defer s.wg.Done()
 			sh := s.shards[idx]
-			for ns := range s.tasks {
+			for {
+				ns, ok := s.queue.pop()
+				if !ok {
+					return
+				}
 				s.processDir(ns, sh)
 			}
 		}(i)
@@ -144,7 +214,10 @@ func (s *scanner) processDir(ns *nodeState, sh *shardStat) {
 	entries, err := os.ReadDir(ns.node.Path0)
 	if err != nil {
 		s.noteError(err, ns.node.Path0)
-		s.finish(ns)
+		s.tryComplete(ns)
+		if s.inFlight.Add(-1) == 0 {
+			s.queue.close()
+		}
 		return
 	}
 	s.totalDirs.Add(1)
@@ -186,52 +259,40 @@ func (s *scanner) processDir(ns *nodeState, sh *shardStat) {
 			s.pushTop(FileInfo{Path: full, Size: sz, ModTime: info.ModTime()})
 		}
 	}
-	// 子任务先计数再入队，保证"归零即关通道"的时序安全
+	// 子任务入无界队列（不阻塞）
 	for _, cs := range children {
 		s.inFlight.Add(1)
-		s.tasks <- cs
+		s.queue.push(cs)
 	}
 	atomic.AddInt64(&ns.node.Bytes, localBytes)
 	atomic.AddInt64(&ns.node.Files, localFiles)
 	atomic.StoreInt32(&ns.ownDone, 1)
-	s.finish(ns)
-	// 本目录单元彻底完成：递减 in-flight，归零即关闭通道（时序安全：子任务已先行计数入队）
+	s.tryComplete(ns)
+	// 本目录单元彻底完成：递减 in-flight，归零即关闭队列
 	if s.inFlight.Add(-1) == 0 {
-		close(s.tasks)
+		s.queue.close()
 	}
 }
 
-// finish 聚合级联：把本节点数值上交父节点；父节点补齐后继续上交。
-// 不触碰 inFlight——每个 processDir 调用恰好在自身结束时递减一次。
-func (s *scanner) finish(ns *nodeState) {
-	for {
-		p := ns.parent
-		if p == nil {
-			return
-		}
-		atomic.AddInt64(&p.node.Bytes, atomic.LoadInt64(&ns.node.Bytes))
-		atomic.AddInt64(&p.node.Files, atomic.LoadInt64(&ns.node.Files))
-		atomic.AddInt64(&p.node.Dirs, atomic.LoadInt64(&ns.node.Dirs)+1)
-		if atomic.AddInt32(&p.pending, -1) == 0 && atomic.LoadInt32(&p.ownDone) == 1 {
-			ns = p
-			continue
-		}
+// tryComplete 目录完全聚合后（自身条目处理完且全部子目录完成）把最终值一次性上交父节点，
+// 并在父节点随之完成时级联。CAS 保证每个节点恰好上交一次——既不遗漏也不重复。
+func (s *scanner) tryComplete(ns *nodeState) {
+	if atomic.LoadInt32(&ns.ownDone) != 1 || atomic.LoadInt32(&ns.pending) != 0 {
 		return
 	}
-}
-
-// normalizeRoot 归一化扫描根：盘符补根反斜杠，相对路径转绝对
-func normalizeRoot(arg string) string {
-	arg = filepath.Clean(strings.Trim(arg, `"`))
-	if vol := filepath.VolumeName(arg); vol != "" && len(arg) == len(vol) {
-		return vol + `\` // "C:" 或 "C:\" → 盘根
+	if !atomic.CompareAndSwapInt32(&ns.completed, 0, 1) {
+		return
 	}
-	if !filepath.IsAbs(arg) {
-		if abs, err := filepath.Abs(arg); err == nil {
-			return abs
-		}
+	p := ns.parent
+	if p == nil {
+		return
 	}
-	return arg
+	atomic.AddInt64(&p.node.Bytes, atomic.LoadInt64(&ns.node.Bytes))
+	atomic.AddInt64(&p.node.Files, atomic.LoadInt64(&ns.node.Files))
+	atomic.AddInt64(&p.node.Dirs, atomic.LoadInt64(&ns.node.Dirs)+1)
+	if atomic.AddInt32(&p.pending, -1) == 0 {
+		s.tryComplete(p)
+	}
 }
 
 func (s *scanner) noteError(err error, path string) {
@@ -306,6 +367,20 @@ func volumeRoot(root string) string {
 		return root
 	}
 	return vol + `\`
+}
+
+// normalizeRoot 归一化扫描根：盘符补根反斜杠，相对路径转绝对
+func normalizeRoot(arg string) string {
+	arg = filepath.Clean(strings.Trim(arg, `"`))
+	if vol := filepath.VolumeName(arg); vol != "" && len(arg) == len(vol) {
+		return vol + `\` // "C:" 或 "C:\" → 盘根
+	}
+	if !filepath.IsAbs(arg) {
+		if abs, err := filepath.Abs(arg); err == nil {
+			return abs
+		}
+	}
+	return arg
 }
 
 // ListFixedDrives 枚举本机固定磁盘根（DRIVE_FIXED）

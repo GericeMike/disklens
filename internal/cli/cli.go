@@ -150,8 +150,9 @@ func cmdScan(argv []string) int {
 		}
 	}
 	for _, r := range res.Roots {
+		rootPrefix := strings.TrimSuffix(r.Name, `\`)
 		for _, c := range r.Children {
-			walk(c, r.Name)
+			walk(c, rootPrefix)
 		}
 	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].bytes > rows[j].bytes })

@@ -65,9 +65,9 @@ func Save(res *scanner.Result) (string, error) {
 	}
 	tag := make([]string, 0, len(res.Roots))
 	for _, r := range res.Roots {
-		v := filepath.VolumeName(r.Path0)
+		v := strings.TrimSuffix(filepath.VolumeName(r.Path0), ":") // 冒号在 Windows 文件名中非法（会被当作 NTFS 备用数据流）
 		if v == "" {
-			v = strings.TrimSuffix(r.Name, `\`)
+			v = strings.TrimSuffix(r.Name, `:\`)
 		}
 		tag = append(tag, v)
 	}
