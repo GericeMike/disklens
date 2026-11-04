@@ -176,6 +176,7 @@ function renderDrives(drives, selected) {
       const d = drives[i];
       if (!d || state.treemapRoot === d.letter) return;
       state.treemapRoot = d.letter;
+      state.treemapOthers = null;
       wrap.querySelectorAll('.kpi').forEach((c, j) => c.setAttribute('aria-selected', j === i ? 'true' : 'false'));
       wrap.querySelectorAll('.kpi-label').forEach((l, j) => {
         l.textContent = `${drives[j].letter} 磁盘${j === i ? ' · 正在查看' : ''}`;
@@ -233,8 +234,21 @@ async function renderClean() {
 }
 
 // ---------- treemap 下钻 ----------
+function crumbSegs(path) {
+  const segs = [];
+  if (/^[a-zA-Z]:\\?$/.test(path)) { segs.push(path); return segs; }
+  let acc = '';
+  for (const seg of path.split('\\')) {
+    if (seg === '') continue;
+    acc = acc ? acc + '\\' + seg : seg + '\\';
+    segs.push(acc);
+  }
+  return segs;
+}
+
 async function loadTreemap(path) {
   state.treemapPath = path;
+  state.treemapOthers = null; // 真实路径导航离开"其他"视图
   const el = $('#treemap');
   let kids;
   if (!state.demo) {
@@ -245,16 +259,7 @@ async function loadTreemap(path) {
   // 面包屑
   const crumb = $('#tm-crumb');
   $('#tm-title').textContent = `${path} · 方块地图`;
-  const segs = [];
-  if (/^[a-zA-Z]:\\?$/.test(path)) { segs.push(path); }
-  else {
-    let acc = '';
-    for (const seg of path.split('\\')) {
-      if (seg === '') { acc = acc || ''; continue; }
-      acc = acc ? acc + '\\' + seg : seg + '\\';
-      segs.push(acc.endsWith(':\\') ? acc : acc);
-    }
-  }
+  const segs = crumbSegs(path);
   crumb.innerHTML = segs.map((p, i) => {
     const cur = i === segs.length - 1;
     const label = i === 0 ? p.replace(/\\$/, '') : nodeName(p);
@@ -264,18 +269,42 @@ async function loadTreemap(path) {
 
   const box = el;
   const h = box.clientHeight > 300 ? box.clientHeight : 460;
-  renderTreemap(box, (kids || []).map(k => ({ name: k.name, value: k.bytes, path: k.path })), {
+  let othersInfo = null;
+  const res = renderTreemap(box, (kids || []).map(k => ({ name: k.name, value: k.bytes, path: k.path })), {
     ramps: RAMPS[curStyle()], fmt: fmtGB, unit: '', height: h, scaleExp: 0.55,
+    minSide: 64, othersLabel: '其他',
     onSelect: (p) => loadTreemap(p),
+    onOpenOthers: () => { if (othersInfo) loadOthersView(path, othersInfo); },
   });
+  othersInfo = (res && res.others) || null;
   renderDirList(path, kids || []);
   if (!kids || kids.length === 0) {
     box.innerHTML = `<div class="empty-inline">此目录没有可下钻的子目录</div>`;
   }
 }
 
+// "其他 N 项"专属视图: 被聚合的小项独立成图，脱离大项竞争后全部可读可点
+function loadOthersView(basePath, items) {
+  state.treemapOthers = { basePath, items };
+  const el = $('#treemap');
+  const h = el.clientHeight > 300 ? el.clientHeight : 460;
+  renderTreemap(el, items.map(k => ({ name: k.name, value: k.bytes, path: k.path })), {
+    ramps: RAMPS[curStyle()], fmt: fmtGB, unit: '', height: h, scaleExp: 0.55,
+    onSelect: (p) => loadTreemap(p), // 点击真实目录 → 回到真实路径视图
+  });
+  const crumb = $('#tm-crumb');
+  $('#tm-title').textContent = `${basePath} · 小项 ${items.length} 个`;
+  const segs = crumbSegs(basePath);
+  let html = segs.map((p, i) => `${i > 0 ? '<span class="sep">›</span>' : ''}<button data-p="${esc(p)}">${esc(i === 0 ? p.replace(/\\$/, '') : nodeName(p))}</button>`).join('');
+  html += `<span class="sep">›</span><button aria-current="true">其他 ${items.length} 项</button>`;
+  crumb.innerHTML = html;
+  crumb.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => loadTreemap(b.dataset.p)));
+  renderDirList(basePath, items, `${basePath} · 小项 ${items.length} 个`);
+}
+
 // 当前目录文字列表: 与左侧地图同步，点击行下钻，ⓘ 打开解释抽屉
-function renderDirList(path, kids) {
+function renderDirList(path, kids, titleOverride) {
+  $('#dl-title').textContent = titleOverride || `${path} · ${kids.length} 个子目录`;
   $('#dl-title').textContent = `${path} · ${kids.length} 个子目录`;
   const el = $('#dirlist');
   if (!kids.length) {
