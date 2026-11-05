@@ -12,6 +12,10 @@ export function DeleteToRecycle(arg1:Array<string>):Promise<Array<main.DeleteRes
 
 export function ExplainPath(arg1:string):Promise<Array<main.KBHitOut>>;
 
+export function ExplainWithAI(arg1:string):Promise<main.AIExplainOut>;
+
+export function GetAIConfig():Promise<main.AIConfigOut>;
+
 export function GetChildren(arg1:string):Promise<Array<main.TreeNode>>;
 
 export function GetCleanSummary(arg1:string):Promise<Array<kb.CleanSummaryEntry>>;
@@ -32,6 +36,10 @@ export function LoadLatestScan():Promise<boolean>;
 
 export function OpenFolder(arg1:string):Promise<void>;
 
+export function SaveAIConfig(arg1:string,arg2:string,arg3:string,arg4:string):Promise<main.AIConfigOut>;
+
 export function SelectDirectory():Promise<string>;
 
 export function StartScan(arg1:Array<string>):Promise<void>;
+
+export function TestAI():Promise<string>;

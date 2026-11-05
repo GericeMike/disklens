@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"disklens/internal/ai"
 	"disklens/internal/history"
 	"disklens/internal/kb"
 	"disklens/internal/recycle"
@@ -347,6 +348,131 @@ func (a *App) ExplainPath(path string) []KBHitOut {
 		out = append(out, o)
 	}
 	return out
+}
+
+// ---------- AI 解释（仅用户主动触发时联网；Key 经 DPAPI 加密存储） ----------
+
+// AIProviderOut 预设信息（前端渲染选择卡片）
+type AIProviderOut struct {
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	DefaultModel string `json:"defaultModel"`
+	KeyHint      string `json:"keyHint"`
+	NeedBaseURL  bool   `json:"needBaseUrl"` // custom 需要用户填地址
+}
+
+// AIConfigOut 脱敏后的配置（Key 只回前 4 位）
+type AIConfigOut struct {
+	Provider string          `json:"provider"`
+	Model    string          `json:"model"`
+	BaseURL  string          `json:"baseUrl"`
+	KeyMask  string          `json:"keyMask"` // 空=未配置
+	HasKey   bool            `json:"hasKey"`
+	Presets  []AIProviderOut `json:"presets"`
+}
+
+// GetAIConfig 读取 AI 配置（Key 脱敏展示）
+func (a *App) GetAIConfig() AIConfigOut {
+	c := ai.LoadConfig()
+	out := AIConfigOut{
+		Provider: c.Provider, Model: c.Model, BaseURL: c.BaseURL,
+		HasKey: c.ApiKey != "", Presets: []AIProviderOut{},
+	}
+	if out.HasKey {
+		out.KeyMask = ai.MaskKey(ai.PlainKey())
+	}
+	for id, p := range ai.Presets {
+		out.Presets = append(out.Presets, AIProviderOut{
+			ID: id, Name: p.Name, DefaultModel: p.DefaultModel, KeyHint: p.KeyHint,
+			NeedBaseURL: id == "custom",
+		})
+	}
+	return out
+}
+
+// SaveAIConfig 保存配置；apiKey 语义：空串=保留旧值，"-"=清除
+func (a *App) SaveAIConfig(provider, apiKey, model, baseURL string) (AIConfigOut, error) {
+	if _, err := ai.SaveConfig(provider, model, baseURL, apiKey); err != nil {
+		return AIConfigOut{}, err
+	}
+	return a.GetAIConfig(), nil
+}
+
+// TestAI 测试连接：发一条最小请求验证 Key 与网络（用户点「测试连接」才联网）
+func (a *App) TestAI() (string, error) {
+	cfg := ai.LoadConfig()
+	apiKey := ai.PlainKey()
+	if apiKey == "" {
+		return "", fmt.Errorf("尚未配置 API Key")
+	}
+	return ai.Chat(cfg, apiKey, "你是连通性测试。", "请只回复四个字：连接成功", nil)
+}
+
+// AIExplainOut AI 解释结果
+type AIExplainOut struct {
+	Text       string `json:"text"`
+	Model      string `json:"model"`
+	Configured bool   `json:"configured"` // false=未配置 Key
+}
+
+// ExplainWithAI 对某目录做 AI 解读：扫描树上下文 + 实时文件样本 + 知识库命中，
+// 构造提示词调用所选模型。仅在前端点击「AI 解释」按钮时被调用。
+func (a *App) ExplainWithAI(path string) (AIExplainOut, error) {
+	out := AIExplainOut{}
+	if path == "" {
+		return out, fmt.Errorf("路径为空")
+	}
+	cfg := ai.LoadConfig()
+	apiKey := ai.PlainKey()
+	if apiKey == "" {
+		return out, fmt.Errorf("尚未配置 AI：请到「设置」页选择提供商并填写 API Key")
+	}
+	// 扫描树内的聚合信息与子目录样本
+	var size, files int64
+	sampleDirs := []string{}
+	idxKey := strings.ToLower(filepath.Clean(path))
+	a.mu.Lock()
+	idx := a.index
+	a.mu.Unlock()
+	if idx != nil {
+		if n, ok := idx[idxKey]; ok {
+			size, files = n.Bytes, n.Files
+			for i, c := range n.Children {
+				if i >= 8 {
+					break
+				}
+				sampleDirs = append(sampleDirs, fmt.Sprintf("%s(%s)", c.Name, humanBytes(c.Bytes)))
+			}
+		}
+	}
+	// 实时文件样本（树里没有文件节点）
+	sampleFiles := []string{}
+	if ents, err := os.ReadDir(path); err == nil {
+		n := 0
+		for _, e := range ents {
+			if e.IsDir() {
+				continue
+			}
+			if n >= 10 {
+				break
+			}
+			sampleFiles = append(sampleFiles, e.Name())
+			n++
+		}
+	}
+	// 知识库命中作为参考
+	kbHits := []string{}
+	for _, h := range kb.Match(path) {
+		kbHits = append(kbHits, fmt.Sprintf("%s（%s，风险:%s）：%s",
+			h.Entry.Name, h.Entry.Cat, kb.RiskMark(h.Entry.Risk), h.Entry.Desc))
+	}
+	system, user := ai.ExplainPrompt(path, size, files, kbHits, sampleDirs, sampleFiles)
+	text, err := ai.Chat(cfg, apiKey, system, user, nil)
+	if err != nil {
+		out.Model, out.Configured = cfg.Model, true
+		return out, err
+	}
+	return AIExplainOut{Text: text, Model: cfg.Model, Configured: true}, nil
 }
 
 // GetCleanSummary 知识库驱动的可清理汇总；drive 如 "C:\"，空串=全部盘

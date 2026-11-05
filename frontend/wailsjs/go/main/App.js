@@ -18,6 +18,14 @@ export function ExplainPath(arg1) {
   return window['go']['main']['App']['ExplainPath'](arg1);
 }
 
+export function ExplainWithAI(arg1) {
+  return window['go']['main']['App']['ExplainWithAI'](arg1);
+}
+
+export function GetAIConfig() {
+  return window['go']['main']['App']['GetAIConfig']();
+}
+
 export function GetChildren(arg1) {
   return window['go']['main']['App']['GetChildren'](arg1);
 }
@@ -58,10 +66,18 @@ export function OpenFolder(arg1) {
   return window['go']['main']['App']['OpenFolder'](arg1);
 }
 
+export function SaveAIConfig(arg1, arg2, arg3, arg4) {
+  return window['go']['main']['App']['SaveAIConfig'](arg1, arg2, arg3, arg4);
+}
+
 export function SelectDirectory() {
   return window['go']['main']['App']['SelectDirectory']();
 }
 
 export function StartScan(arg1) {
   return window['go']['main']['App']['StartScan'](arg1);
+}
+
+export function TestAI() {
+  return window['go']['main']['App']['TestAI']();
 }

@@ -155,6 +155,32 @@ html[data-style="terminal"] .style-switch button[aria-pressed="true"] { backgrou
 .file-row .dsize { flex: none; text-align: right; font-size: var(--fs-body); }
 .file-row .dmtime { flex: none; width: 118px; text-align: right; font-size: var(--fs-small); color: var(--muted); }
 
+/* AI 解释: 设置页配置区 + 解释抽屉的 AI 补充解读 */
+.ai-presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; margin: 10px 0; }
+.ai-preset { text-align: left; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--raised); cursor: pointer; color: var(--text); }
+.ai-preset[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+.ai-preset b { display: block; font-size: var(--fs-body); margin-bottom: 2px; }
+.ai-preset span { font-size: var(--fs-small); color: var(--muted); }
+.ai-form { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; max-width: 560px; }
+.ai-row label { display: block; font-size: var(--fs-small); color: var(--muted); margin-bottom: 4px; }
+.ai-row input { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--bg); color: var(--text); font-size: var(--fs-body); }
+.ai-row input:focus { outline: none; border-color: var(--accent); }
+.ai-masked { color: var(--muted); font-weight: 400; }
+.ai-actions { display: flex; align-items: center; gap: 10px; }
+.ai-status { font-size: var(--fs-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 420px; }
+.ai-status.ai-ok { color: var(--ok, #3fb26f); }
+.ai-status.ai-err { color: var(--danger, #e5484d); }
+.ex-block.ai-block { margin-top: 6px; }
+.ai-ask { font-size: var(--fs-body); }
+.ai-note { font-size: var(--fs-small); color: var(--muted); margin-top: 6px; }
+.ai-text { line-height: 1.7; }
+.ai-text .ai-h { font-weight: 700; margin-top: 8px; }
+.ai-text .ai-p { margin-top: 4px; }
+.ai-text .ai-li { margin: 2px 0 2px 1.2em; color: var(--fg, var(--text)); }
+.ai-sign { margin-top: 10px; font-size: var(--fs-small); color: var(--muted); }
+.ai-err { color: var(--danger, #e5484d); margin-bottom: 8px; font-size: var(--fs-small); white-space: pre-wrap; word-break: break-all; }
+#ai-body .btn { margin-right: 8px; }
+
 /* 可清理项独立一行: 两列排布 */
 .clean-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
 .clean-grid .clean-row + .clean-row { border-top: 1px solid var(--rule); }

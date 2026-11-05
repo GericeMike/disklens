@@ -591,9 +591,13 @@ async function renderHistory() {
 }
 
 // ---------- 设置视图 ----------
-function renderSettings() {
+async function renderSettings() {
   const view = $('#view');
   const style = curStyle();
+  let aiCfg = { provider: 'zhipu', model: '', baseUrl: '', keyMask: '', hasKey: false, presets: [] };
+  if (!state.demo && typeof api === 'function') {
+    try { aiCfg = await api().GetAIConfig() || aiCfg; } catch (e) { /* 保底默认 */ }
+  }
   view.innerHTML = `
     <div class="title-row"><div><h1>设置</h1></div></div>
     <div class="set-section">
@@ -614,12 +618,37 @@ function renderSettings() {
       <span class="kbd-path" id="kb-path">%APPDATA%\\DiskLens\\kb-user.json</span>
     </div>
     <div class="set-section">
-      <div class="set-title">AI 解释（即将推出）</div>
-      <div class="set-hint">内置知识库覆盖不到的目录将可交由 AI 解读；支持智谱 / DeepSeek / Kimi / 自定义 OpenAI 兼容接口，仅在你主动触发时联网。</div>
+      <div class="set-title">AI 解释</div>
+      <div class="set-hint">知识库覆盖不到的目录可交由 AI 解读，仅在点击「测试连接」或「AI 解释」时联网。API Key 经 Windows DPAPI 加密存储，不明文落盘。</div>
+      <div class="ai-presets" role="radiogroup">
+        ${(aiCfg.presets || []).map(p => `
+          <button class="ai-preset" data-p="${esc(p.id)}" aria-pressed="${p.id === aiCfg.provider}">
+            <b>${esc(p.name)}</b><span>${esc(p.keyHint)}</span>
+          </button>`).join('')}
+      </div>
+      <div class="ai-form">
+        <div class="ai-row" id="ai-url-row" ${aiCfg.provider === 'custom' ? '' : 'hidden'}>
+          <label>接口地址（OpenAI 兼容，须 https）</label>
+          <input id="ai-url" type="text" placeholder="https://your-endpoint.example.com/v1" value="${esc(aiCfg.baseUrl || '')}">
+        </div>
+        <div class="ai-row">
+          <label>API Key ${aiCfg.hasKey ? `<span class="ai-masked">已配置 ${esc(aiCfg.keyMask)}，留空则保留</span>` : ''}</label>
+          <input id="ai-key" type="password" autocomplete="off" placeholder="${aiCfg.hasKey ? '留空保留现有 Key' : '粘贴 API Key'}">
+        </div>
+        <div class="ai-row">
+          <label>模型</label>
+          <input id="ai-model" type="text" value="${esc(aiCfg.model || '')}" placeholder="如 glm-4-flash / deepseek-chat">
+        </div>
+        <div class="ai-actions">
+          <button class="btn" id="ai-save">保存配置</button>
+          <button class="btn" id="ai-test">测试连接</button>
+          <span id="ai-status" class="ai-status"></span>
+        </div>
+      </div>
     </div>
     <div class="set-section">
       <div class="set-title">隐私与安全</div>
-      <div class="set-hint">除 AI 功能（未启用）外，本工具没有任何联网行为：扫描、存档、知识库全部本地完成。系统路径（Windows / Program Files / ProgramData 等）被硬编码锁定，任何操作都无法删除。</div>
+      <div class="set-hint">除 AI 功能（仅你主动触发）外，本工具没有任何联网行为：扫描、存档、知识库全部本地完成。系统路径（Windows / Program Files / ProgramData 等）被硬编码锁定，任何操作都无法删除。</div>
     </div>`;
   view.querySelectorAll('.style-card').forEach(card => {
     card.addEventListener('click', () => {
@@ -628,6 +657,47 @@ function renderSettings() {
       localStorage.setItem('dl.style', s);
       view.querySelectorAll('.style-card').forEach(c => c.setAttribute('aria-pressed', c === card));
     });
+  });
+  // AI 配置区交互
+  const status = (msg, ok) => {
+    const el = $('#ai-status');
+    if (el) { el.textContent = msg; el.classList.toggle('ai-ok', !!ok); el.classList.toggle('ai-err', !ok); }
+  };
+  const curProvider = () => view.querySelector('.ai-preset[aria-pressed="true"]')?.dataset.p || 'zhipu';
+  const presetOf = id => (aiCfg.presets || []).find(p => p.id === id);
+  view.querySelectorAll('.ai-preset').forEach(card => {
+    card.addEventListener('click', () => {
+      view.querySelectorAll('.ai-preset').forEach(c => c.setAttribute('aria-pressed', c === card));
+      const p = presetOf(card.dataset.p);
+      const urlRow = $('#ai-url-row');
+      if (urlRow) urlRow.hidden = card.dataset.p !== 'custom';
+      if (p && $('#ai-model')) $('#ai-model').value = p.defaultModel || ''; // 换家自动填默认模型，可再改
+    });
+  });
+  // 保存（可选先保存）后刷新设置页状态区
+  const doSave = async () => {
+    const provider = curProvider();
+    const apiKey = $('#ai-key').value.trim();
+    const model = $('#ai-model').value.trim();
+    const baseURL = $('#ai-url') ? $('#ai-url').value.trim() : '';
+    await api().SaveAIConfig(provider, apiKey, model, baseURL);
+    $('#ai-key').value = '';
+    await renderSettings(); // 重新渲染以更新"已配置 sk-x****"与隐藏 url 行
+  };
+  $('#ai-save')?.addEventListener('click', async () => {
+    status('保存中…', true);
+    try { await doSave(); status('已保存', true); }
+    catch (e) { status('保存失败: ' + e, false); }
+  });
+  $('#ai-test')?.addEventListener('click', async () => {
+    status('测试中（联网请求模型）…', true);
+    try { await doSave(); } catch (e) { status('保存失败: ' + e, false); return; }
+    try {
+      const out = await api().TestAI();
+      status('✓ 连接成功：' + String(out || '').slice(0, 40), true);
+    } catch (e) {
+      status('✗ ' + e, false);
+    }
   });
 }
 
@@ -654,18 +724,12 @@ async function openExplain(path) {
     body.innerHTML = `
       <div class="ex-block"><div class="ex-head"><b>${esc(nodeName(path))}</b></div>
       <div class="ex-desc">知识库还没有这个目录的条目。</div>
-      <div class="ex-why">可在 %APPDATA%\\DiskLens\\kb-user.json 里添加自定义条目；AI 解释功能上线后会自动兜底。</div>
+      <div class="ex-why">可在 %APPDATA%\\DiskLens\\kb-user.json 里添加自定义条目，或让 AI 解读。</div>
       ${state.demo ? '' : `<div class="ex-label">本机路径</div>
-      <ul class="ex-paths"><li><span class="p" title="${esc(path)}">${esc(path)}</span><button class="ex-open" data-open="${esc(path)}" title="在资源管理器中打开">打开</button></li></ul>`}</div>`;
-    body.querySelectorAll('.ex-open').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        btn.disabled = true;
-        try { await api().OpenFolder(btn.dataset.open); }
-        catch (err) { console.warn('打开失败:', err); }
-        finally { btn.disabled = false; }
-      });
-    });
+      <ul class="ex-paths"><li><span class="p" title="${esc(path)}">${esc(path)}</span><button class="ex-open" data-open="${esc(path)}" title="在资源管理器中打开">打开</button></li></ul>`}</div>
+      ${aiBlockHTML(path)}`;
+    bindExOpen(body);
+    bindAIBlock(body, path);
     return;
   }
   body.innerHTML = hits.map((h, i) => {
@@ -694,7 +758,14 @@ async function openExplain(path) {
         <ul class="ex-paths">${(r.paths || []).map(p => `<li><span class="p">${esc(p)}</span><button class="ex-open" data-open="${esc(p)}" title="在资源管理器中打开">打开</button></li>`).join('')}</ul>`).join('')}
     </div>`;
   }).join('');
-  body.querySelectorAll('.ex-open').forEach(btn => {
+  body.insertAdjacentHTML('beforeend', aiBlockHTML(path));
+  bindExOpen(body);
+  bindAIBlock(body, path);
+}
+
+// bindExOpen 抽屉内「打开」按钮统一绑定
+function bindExOpen(scope) {
+  scope.querySelectorAll('.ex-open').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       btn.disabled = true;
@@ -703,6 +774,60 @@ async function openExplain(path) {
       finally { btn.disabled = false; }
     });
   });
+}
+
+// ---------- AI 补充解读（抽屉内，仅点击时联网） ----------
+function aiBlockHTML(path) {
+  if (state.demo) return '';
+  return `
+  <div class="ex-block ai-block">
+    <div class="ex-label">AI 补充解读</div>
+    <div id="ai-body">
+      <button class="btn ai-ask" id="ai-ask">🤖 让 AI 解读这个目录</button>
+      <div class="ai-note">需先在「设置 → AI 解释」配置 API Key；点击才会联网。</div>
+    </div>
+  </div>`;
+}
+
+// bindAIBlock 点击后收集目录上下文调用 ExplainWithAI，结果就地渲染
+function bindAIBlock(scope, path) {
+  const btn = scope.querySelector('#ai-ask');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const box = scope.querySelector('#ai-body');
+    if (!box) return;
+    btn.disabled = true;
+    box.innerHTML = `<div class="empty-inline">正在询问 AI…（首次调用可能需要数秒）</div>`;
+    try {
+      const r = await api().ExplainWithAI(path);
+      box.innerHTML = `
+        <div class="ai-text">${aiMarkdown(r.text)}</div>
+        <div class="ai-sign">由 ${esc(r.model || 'AI')} 生成 · AI 判断仅供参考，删除前请自行确认</div>`;
+    } catch (e) {
+      const msg = String(e || '');
+      box.innerHTML = `
+        <div class="ai-err">${esc(msg)}</div>
+        ${/尚未配置|Key/.test(msg) ? `<button class="btn" id="ai-goto-settings">去设置页配置</button>` : ''}
+        <button class="btn" id="ai-retry">重试</button>`;
+      const go = box.querySelector('#ai-goto-settings');
+      if (go) go.addEventListener('click', () => { closeExplain(); switchView('settings'); });
+      box.querySelector('#ai-retry')?.addEventListener('click', () => {
+        btn.disabled = false;
+        btn.click();
+      });
+    }
+  });
+}
+
+// aiMarkdown 轻量渲染：按行分段，【标题】行加粗，短横线行成列表
+function aiMarkdown(text) {
+  const lines = String(text || '').split(/\r?\n/).filter(l => l.trim());
+  return lines.map(l => {
+    const t = esc(l.trim());
+    if (/^【.+】/.test(l.trim())) return `<div class="ai-h">${t}</div>`;
+    if (/^[-•·]\s/.test(l.trim())) return `<div class="ai-li">${t.replace(/^[-•·]\s/, '· ')}</div>`;
+    return `<div class="ai-p">${t}</div>`;
+  }).join('');
 }
 
 function closeExplain() {
