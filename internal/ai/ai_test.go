@@ -165,8 +165,8 @@ func TestExplainPrompt(t *testing.T) {
 		[]string{"cache(1.2 GB)", "logs(20 MB)"},
 		[]string{"setup.exe", "readme.txt"},
 	)
-	// 面向小白的讲人话要求 + 字数克制 + 三段结构
-	for _, want := range []string{"说人话", "大白话", "200 字", "能否删除", "编造"} {
+	// 面向小白的讲人话要求 + 结合本机样本 + 字数克制 + 排斥版本号细节
+	for _, want := range []string{"说人话", "大白话", "300 字", "结合本机", "版本号", "能否删除", "编造"} {
 		if !strings.Contains(system, want) {
 			t.Errorf("系统提示词缺少 %q", want)
 		}
