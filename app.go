@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -379,18 +381,100 @@ func (a *App) DeleteToRecycle(paths []string) []DeleteResult {
 	if len(paths) == 0 {
 		return []DeleteResult{}
 	}
+	// 删除前记录文件大小：树里没有文件节点，删除后按大小从父链扣减
+	fileSizes := map[string]int64{}
+	for _, p := range paths {
+		if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+			fileSizes[strings.ToLower(filepath.Clean(p))] = fi.Size()
+		}
+	}
 	res := recycle.SendToRecycle(paths)
 	out := make([]DeleteResult, 0, len(res))
 	var removed []string
+	var removedFiles []string
 	for _, r := range res {
 		out = append(out, DeleteResult{Path: r.Path, OK: r.OK, Reason: r.Reason})
-		if r.OK {
-			removed = append(removed, r.Path)
+		if !r.OK {
+			continue
+		}
+		key := strings.ToLower(filepath.Clean(r.Path))
+		a.mu.Lock()
+		_, inTree := a.index[key]
+		a.mu.Unlock()
+		if inTree {
+			removed = append(removed, r.Path) // 目录：走整树摘除
+		} else if sz, ok := fileSizes[key]; ok {
+			removedFiles = append(removedFiles, r.Path+"\x00"+fmt.Sprint(sz))
 		}
 	}
 	// 内存扫描树同步移除（父链减值 + 索引清理），GUI 刷新后不再显示已删目录
 	a.removeNodes(removed)
+	for _, rf := range removedFiles {
+		i := strings.IndexByte(rf, '\x00')
+		sz, _ := strconv.ParseInt(rf[i+1:], 10, 64)
+		a.subtractFromParent(rf[:i], sz, 1)
+	}
 	a.emit("deleted:done", map[string]any{"count": len(out)})
+	return out
+}
+
+// subtractFromParent 文件从树中扣除：父链逐级减 Bytes/Files（文件不在 Children，无节点可摘）
+func (a *App) subtractFromParent(p string, bytes, files int64) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if a.index == nil {
+		return
+	}
+	cur := filepath.Dir(strings.ToLower(filepath.Clean(p)))
+	for {
+		node, ok := a.index[strings.ToLower(cur)]
+		if !ok {
+			return // 超出存档根（裁剪深度外），尽力而为
+		}
+		node.Bytes -= bytes
+		node.Files -= files
+		parent := filepath.Dir(cur)
+		if strings.EqualFold(parent, cur) {
+			return
+		}
+		cur = parent
+	}
+}
+
+// ListFiles 某目录下的文件列表（叶子目录内容查看；按大小降序，最多 200 条）
+func (a *App) ListFiles(path string) []FileRow {
+	out := []FileRow{}
+	ents, err := os.ReadDir(path)
+	if err != nil {
+		return out
+	}
+	type fileItem struct {
+		name string
+		size int64
+		mt   time.Time
+	}
+	var files []fileItem
+	for _, e := range ents {
+		if e.IsDir() {
+			continue
+		}
+		info, ierr := e.Info()
+		if ierr != nil {
+			continue
+		}
+		files = append(files, fileItem{e.Name(), info.Size(), info.ModTime()})
+	}
+	sort.Slice(files, func(i, j int) bool { return files[i].size > files[j].size })
+	for i, f := range files {
+		if i >= 200 {
+			break
+		}
+		out = append(out, FileRow{
+			Path:    filepath.Join(path, f.name),
+			Size:    f.size,
+			ModTime: f.mt.Format("2006-01-02 15:04"),
+		})
+	}
 	return out
 }
 

@@ -347,16 +347,12 @@ function loadOthersView(basePath, items) {
   renderDirList(basePath, norm, `${basePath} · 小项 ${norm.length} 个`);
 }
 
-// 当前目录文字列表: 与左侧地图同步，点击行下钻，ⓘ 打开解释抽屉
+// 当前目录文字列表: 与左侧地图同步，点击行下钻，ⓘ 打开解释抽屉；下方实时文件区支持逐文件删除
 function renderDirList(path, kids, titleOverride) {
   const el = $('#dirlist');
   if (!el) return; // 视图未挂载
   $('#dl-title').textContent = titleOverride || `${path} · ${kids.length} 个子目录`;
-  if (!kids.length) {
-    el.innerHTML = `<div class="empty-inline">此目录没有子目录</div>`;
-    return;
-  }
-  el.innerHTML = kids.map(k => `
+  const dirHtml = kids.length ? kids.map(k => `
     <div class="dir-row" data-p="${esc(k.path)}">
       ${k.risk ? riskPill(k.risk) : ''}
       <span class="dname" title="${esc(k.name)}">${esc(k.name)}</span>
@@ -364,7 +360,11 @@ function renderDirList(path, kids, titleOverride) {
       <span class="dsize num">${fmtGB(k.bytes)}</span>
       <button class="dinfo" data-explain="${esc(k.path)}" title="知识库解释">ⓘ</button>
       <button class="ddel" data-del="${esc(k.path)}" data-name="${esc(k.name)}" data-bytes="${k.bytes || 0}" data-risk="${esc(k.risk || '')}" title="送入回收站">🗑</button>
-    </div>`).join('');
+    </div>`).join('') : `<div class="empty-inline">此目录没有子目录</div>`;
+  // 实时文件区：扫描树只存目录，文件按需读取（叶子目录逐文件删除的入口）
+  el.innerHTML = dirHtml + `
+    <div class="files-head" id="files-head">文件</div>
+    <div class="file-rows" id="file-rows"><div class="empty-inline">读取中…</div></div>`;
   el.querySelectorAll('.dir-row').forEach(row => {
     row.addEventListener('click', () => loadTreemap(row.dataset.p));
   });
@@ -375,6 +375,39 @@ function renderDirList(path, kids, titleOverride) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       openDelModal(btn.dataset.del, btn.dataset.name, Number(btn.dataset.bytes) || 0, btn.dataset.risk);
+    });
+  });
+  renderFiles(path);
+}
+
+// renderFiles 实时文件区：列出当前目录的文件（按需读取，树里不存文件）；
+// token 防 race——快速下钻切换目录后，迟到的旧响应不再写入
+let filesToken = 0;
+async function renderFiles(path) {
+  const rows = $('#file-rows');
+  if (!rows || !path || state.demo) return;
+  const token = ++filesToken;
+  let files = [];
+  try {
+    files = (await api().ListFiles(path)) || [];
+  } catch (e) { files = []; }
+  if (token !== filesToken) return; // 目录已切换
+  const head = $('#files-head');
+  if (head) head.textContent = files.length >= 200 ? `文件 200+ 个（按大小显示前 200）` : `文件 ${files.length} 个`;
+  rows.innerHTML = files.map(f => {
+    const name = nodeName(f.path);
+    return `
+    <div class="file-row" title="${esc(f.path)}">
+      <span class="dname" title="${esc(name)}">${esc(name)}</span>
+      <span class="dsize num">${fmtGB(f.size)}</span>
+      <span class="dmtime num">${esc(f.modTime)}</span>
+      <button class="ddel" data-del="${esc(f.path)}" data-name="${esc(name)}" data-bytes="${f.size || 0}" data-risk="" title="送入回收站">🗑</button>
+    </div>`;
+  }).join('') || `<div class="empty-inline">本目录没有文件</div>`;
+  rows.querySelectorAll('.ddel').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDelModal(btn.dataset.del, btn.dataset.name, Number(btn.dataset.bytes) || 0, '');
     });
   });
 }

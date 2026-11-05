@@ -146,6 +146,15 @@ html[data-style="terminal"] .style-switch button[aria-pressed="true"] { backgrou
 .dir-row .dinfo { flex: none; width: 24px; height: 24px; border: 0; border-radius: 4px; background: none; color: var(--muted); cursor: pointer; font-size: var(--fs-small); }
 .dir-row .dinfo:hover { background: var(--active); color: var(--text); }
 
+/* 实时文件区: 目录列表下方按需读取的文件清单（叶子目录逐文件删除入口） */
+.files-head { margin: 12px 0 2px; padding-top: 10px; border-top: 1px solid var(--rule); font-size: var(--fs-small); color: var(--muted); }
+.file-row { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 5px 0; border-radius: 4px; }
+.file-row:hover { background: var(--raised); }
+.file-row + .file-row { border-top: 1px solid var(--rule); }
+.file-row .dname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.file-row .dsize { flex: none; text-align: right; font-size: var(--fs-body); }
+.file-row .dmtime { flex: none; width: 118px; text-align: right; font-size: var(--fs-small); color: var(--muted); }
+
 /* 可清理项独立一行: 两列排布 */
 .clean-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; }
 .clean-grid .clean-row + .clean-row { border-top: 1px solid var(--rule); }

@@ -24,6 +24,8 @@ export function GetRoots():Promise<Array<main.TreeNode>>;
 
 export function IsScanning():Promise<boolean>;
 
+export function ListFiles(arg1:string):Promise<Array<main.FileRow>>;
+
 export function ListHistoryScans():Promise<Array<main.HistoryItem>>;
 
 export function LoadLatestScan():Promise<boolean>;

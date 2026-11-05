@@ -42,6 +42,10 @@ export function IsScanning() {
   return window['go']['main']['App']['IsScanning']();
 }
 
+export function ListFiles(arg1) {
+  return window['go']['main']['App']['ListFiles'](arg1);
+}
+
 export function ListHistoryScans() {
   return window['go']['main']['App']['ListHistoryScans']();
 }
