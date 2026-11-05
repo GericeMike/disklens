@@ -116,6 +116,12 @@ func Scan(opt Options) (*Result, error) {
 	if opt.Workers <= 0 {
 		opt.Workers = 8
 	}
+	// 根必须存在：拼错路径的静默空扫描比报错更误导
+	for _, r := range opt.Roots {
+		if _, err := os.Stat(normalizeRoot(r)); err != nil {
+			return nil, fmt.Errorf("扫描根不存在或无法访问: %s", r)
+		}
+	}
 	s := &scanner{opt: opt, queue: newTaskQueue(), top: make(fileHeap, 0, topFilesKeep)}
 	for i := 0; i < opt.Workers; i++ {
 		s.shards = append(s.shards, &shardStat{bytes: map[string]int64{}, files: map[string]int64{}})

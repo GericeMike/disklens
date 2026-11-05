@@ -104,6 +104,7 @@ type OverviewData struct {
 	Ready      bool            `json:"ready"`
 	Duration   float64         `json:"durationSec"`
 	Drives     []DriveStat     `json:"drives"`
+	Roots      []string        `json:"roots"` // 扫描范围根（子文件夹扫描时 treemap 默认入口）
 	TotalBytes int64           `json:"totalBytes"`
 	TotalFiles int64           `json:"totalFiles"`
 	TotalDirs  int64           `json:"totalDirs"`
@@ -133,6 +134,16 @@ func (a *App) GetDrives() []DriveOption {
 		})
 	}
 	return out
+}
+
+// SelectDirectory 弹出系统目录选择对话框（用户主动触发；仅返回路径字符串）
+func (a *App) SelectDirectory() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("对话框仅可在应用内使用")
+	}
+	return wailsruntime.OpenDirectoryDialog(a.ctx, wailsruntime.OpenDialogOptions{
+		Title: "选择要扫描的文件夹",
+	})
 }
 
 // emit 安全事件推送：ctx 未就绪（如单元测试）时静默跳过
@@ -212,12 +223,16 @@ func (a *App) GetOverview() *OverviewData {
 	d := &OverviewData{
 		Ready:      true,
 		Duration:   res.Duration,
+		Roots:      []string{},
 		TotalBytes: res.TotalBytes,
 		TotalFiles: res.TotalFiles,
 		TotalDirs:  res.TotalDirs,
 		Errors:     res.Errors,
 		FinishedAt: res.FinishedAt.Format("01-02 15:04"),
 		ScanTime:   res.FinishedAt.Format("01-02 15:04"),
+	}
+	for _, r := range res.Roots {
+		d.Roots = append(d.Roots, r.Name)
 	}
 	for _, dv := range res.Drives {
 		usedPc := 0.0

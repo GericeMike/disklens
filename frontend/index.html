@@ -71,8 +71,16 @@
     <div class="modal-backdrop hidden" id="scan-modal">
         <div class="modal">
             <h3>选择扫描范围</h3>
-            <div class="sub" id="scan-sub">选择要透视的磁盘，扫描为只读操作</div>
+            <div class="sub" id="scan-sub">整盘勾选，或添加盘内某个/多个文件夹只扫该部分；扫描为只读操作</div>
             <div id="scan-drives"></div>
+            <div class="scan-custom">
+                <div class="scan-custom-row">
+                    <input class="input" id="scan-custom-input" placeholder="粘贴文件夹路径（如 D:\下载），回车或点添加">
+                    <button class="btn" id="scan-browse">浏览…</button>
+                    <button class="btn" id="scan-add">添加</button>
+                </div>
+                <div id="scan-custom-list"></div>
+            </div>
             <div class="progressbar indet hidden" id="scan-bar"><div></div></div>
             <div class="progress-meta hidden" id="scan-meta"></div>
             <div class="scan-error hidden" id="scan-error"></div>

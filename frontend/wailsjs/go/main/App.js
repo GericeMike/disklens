@@ -54,6 +54,10 @@ export function OpenFolder(arg1) {
   return window['go']['main']['App']['OpenFolder'](arg1);
 }
 
+export function SelectDirectory() {
+  return window['go']['main']['App']['SelectDirectory']();
+}
+
 export function StartScan(arg1) {
   return window['go']['main']['App']['StartScan'](arg1);
 }

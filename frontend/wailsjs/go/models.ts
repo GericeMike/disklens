@@ -276,6 +276,7 @@ export namespace main {
 	    ready: boolean;
 	    durationSec: number;
 	    drives: DriveStat[];
+	    roots: string[];
 	    totalBytes: number;
 	    totalFiles: number;
 	    totalDirs: number;
@@ -295,6 +296,7 @@ export namespace main {
 	        this.ready = source["ready"];
 	        this.durationSec = source["durationSec"];
 	        this.drives = this.convertValues(source["drives"], DriveStat);
+	        this.roots = source["roots"];
 	        this.totalBytes = source["totalBytes"];
 	        this.totalFiles = source["totalFiles"];
 	        this.totalDirs = source["totalDirs"];

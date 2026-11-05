@@ -30,4 +30,6 @@ export function LoadLatestScan():Promise<boolean>;
 
 export function OpenFolder(arg1:string):Promise<void>;
 
+export function SelectDirectory():Promise<string>;
+
 export function StartScan(arg1:Array<string>):Promise<void>;

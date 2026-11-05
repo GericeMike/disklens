@@ -121,11 +121,12 @@ async function renderOverview() {
     return;
   }
 
-  // treemap: 默认展示占用最大盘的根；盘概览水位条兼任 treemap 的盘切换标签
+  // treemap: 默认展示本次扫描的实际根（子文件夹扫描时是子目录而非盘根）；
+  // 盘概览水位条兼任 treemap 的盘切换标签
   const biggest = [...(d.drives || [])].sort((a, b) => (b.total - b.free) - (a.total - a.free))[0];
-  const rootPath = biggest ? biggest.letter : 'C:\\';
-  if (!state.treemapRoot) {
-    state.treemapRoot = rootPath;
+  const roots = (d.roots && d.roots.length) ? d.roots : (biggest ? [biggest.letter] : ['C:\\']);
+  if (!state.treemapRoot || !roots.some(r => r.toLowerCase() === String(state.treemapRoot).toLowerCase())) {
+    state.treemapRoot = roots[0];
   }
   renderDrives(d.drives, state.treemapRoot);
   renderTopFiles(d.topFiles);
@@ -159,7 +160,8 @@ function renderDrives(drives, selected) {
     const used = d.total - d.free;
     const pct = Number.isFinite(d.usedPct) ? d.usedPct : 0;
     const ticks = [25, 50, 75].map(p => `<span class="water-tick" style="left:${p}%"></span>`).join('');
-    const sel = d.letter === selected;
+    // treemapRoot 可能是子文件夹根（D:\GJQMTTest），属该盘即视为正在查看
+    const sel = String(selected || '').toLowerCase().startsWith(d.letter.toLowerCase());
     return `
       <div class="kpi" role="tab" aria-selected="${sel}" title="点击查看 ${esc(d.letter)} 的方块地图">
         <div class="kpi-label">${esc(d.letter)} 磁盘${sel ? ' · 正在查看' : ''}</div>
@@ -628,6 +630,8 @@ function closeExplain() {
 }
 
 // ---------- 扫描弹窗 ----------
+let scanCustom = []; // 会话内保留，便于重复扫描同一组子文件夹
+
 async function openScanModal() {
   $('#scan-error').classList.add('hidden');
   $('#scan-bar').classList.add('hidden');
@@ -636,6 +640,7 @@ async function openScanModal() {
   const wrap = $('#scan-drives');
   wrap.innerHTML = `<div class="empty-inline">读取磁盘列表…</div>`;
   $('#scan-modal').classList.remove('hidden');
+  renderScanCustom();
   if (state.demo) {
     wrap.innerHTML = `<div class="empty-inline">浏览器演示模式不支持扫描，请在 disklens.exe 中运行</div>`;
     $('#scan-start').disabled = true;
@@ -650,12 +655,49 @@ async function openScanModal() {
     </label>`).join('') || `<div class="empty-inline">未找到固定磁盘</div>`;
 }
 
+function scanErr(msg) {
+  const err = $('#scan-error');
+  err.textContent = msg;
+  err.classList.remove('hidden');
+}
+
+function renderScanCustom() {
+  const list = $('#scan-custom-list');
+  if (!list) return;
+  list.innerHTML = scanCustom.map((p, i) => `
+    <div class="scan-custom-item">
+      <span class="scan-custom-path" title="${esc(p)}">${esc(p)}</span>
+      <button class="scan-custom-del" data-i="${i}" title="移除">✕</button>
+    </div>`).join('');
+  list.querySelectorAll('.scan-custom-del').forEach(b => b.addEventListener('click', () => {
+    scanCustom.splice(+b.dataset.i, 1);
+    renderScanCustom();
+  }));
+}
+
+function addScanCustom(raw) {
+  let p = (raw || '').trim().replace(/^"+|"+$/g, '').replace(/\//g, '\\');
+  if (!p) return;
+  if (!/^[a-zA-Z]:\\/.test(p)) {
+    scanErr('请输入完整路径（含盘符，如 D:\\下载）');
+    return;
+  }
+  p = p.replace(/\\+$/, '') || p; // 去尾反斜杠（保留盘根 C:\ 本身）
+  if (scanCustom.some(x => x.toLowerCase() === p.toLowerCase())) return;
+  // 子文件夹若落在已勾选盘内 → 自动取消勾选该盘，避免整盘+子树重复扫描
+  const letter = p.slice(0, 2) + '\\';
+  const cb = document.querySelector(`#scan-drives input[value="${CSS.escape(letter)}"]`);
+  if (cb && cb.checked) cb.checked = false;
+  scanCustom.push(p);
+  $('#scan-error').classList.add('hidden');
+  renderScanCustom();
+}
+
 async function startScan() {
   const checked = [...document.querySelectorAll('#scan-drives input:checked')].map(i => i.value);
-  if (!checked.length) {
-    const err = $('#scan-error');
-    err.textContent = '至少选择一个磁盘';
-    err.classList.remove('hidden');
+  const roots = [...checked, ...scanCustom];
+  if (!roots.length) {
+    scanErr('至少勾选一个磁盘，或添加要扫描的文件夹');
     return;
   }
   $('#scan-start').disabled = true;
@@ -664,7 +706,7 @@ async function startScan() {
   $('#scan-bar').classList.add('indet');
   $('#scan-meta').classList.remove('hidden');
   $('#scan-meta').textContent = '正在扫描…';
-  await api().StartScan(checked);
+  await api().StartScan(roots);
 }
 
 function wireScanEvents() {
@@ -733,6 +775,16 @@ async function boot() {
   $('#drawer-backdrop').addEventListener('click', closeExplain);
   $('#scan-cancel').addEventListener('click', () => $('#scan-modal').classList.add('hidden'));
   $('#scan-start').addEventListener('click', startScan);
+  $('#scan-add').addEventListener('click', () => addScanCustom($('#scan-custom-input').value));
+  $('#scan-custom-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addScanCustom($('#scan-custom-input').value);
+  });
+  $('#scan-browse').addEventListener('click', async () => {
+    try {
+      const p = await api().SelectDirectory();
+      if (p) addScanCustom(p);
+    } catch (e) { scanErr('打开目录选择器失败: ' + e); }
+  });
   $('#del-cancel').addEventListener('click', closeDelModal);
   $('#del-confirm').addEventListener('click', confirmDelete);
   wireScanEvents();

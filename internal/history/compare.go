@@ -2,6 +2,7 @@ package history
 
 import (
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -16,7 +17,9 @@ type Delta struct {
 	Diff int64 // New - Old
 }
 
-// Compare 对比两份存档（裁剪树按路径对齐），返回 |Diff| >= minBytes 的变化，按绝对值降序
+// Compare 对比两份存档（裁剪树按路径对齐），返回 |Diff| >= minBytes 的变化。
+// 后代路径的变化已被祖先概括（父目录总量含全部子树），折叠为最浅一条；
+// 盘根（C:\ 等）只展示自身、不折叠他人，否则整盘变化会只剩一行没法定位。
 func Compare(a, b *Snapshot, minBytes int64) ([]Delta, error) {
 	ma := treeMap(a)
 	mb := treeMap(b)
@@ -42,8 +45,51 @@ func Compare(a, b *Snapshot, minBytes int64) ([]Delta, error) {
 			out = append(out, d)
 		}
 	}
-	sort.Slice(out, func(i, j int) bool { return abs(out[i].Diff) > abs(out[j].Diff) })
-	return out, nil
+	// 浅路径优先：祖先保留后，其所有后代变化折叠掉
+	sort.Slice(out, func(i, j int) bool {
+		di, dj := depthOf(out[i].Path), depthOf(out[j].Path)
+		if di != dj {
+			return di < dj
+		}
+		return abs(out[i].Diff) > abs(out[j].Diff)
+	})
+	kept := make([]Delta, 0, len(out))
+	keptSet := map[string]bool{}
+	for _, d := range out {
+		p := strings.ToLower(filepath.Clean(d.Path))
+		if isDriveRoot(p) {
+			kept = append(kept, d) // 盘根展示，但不作为折叠锚点
+			continue
+		}
+		covered := false
+		cur := filepath.Dir(p)
+		for cur != p && len(cur) > 3 { // 收缩到盘根即止；循环条件只挡首层
+			if keptSet[strings.ToLower(cur)] {
+				covered = true
+				break
+			}
+			parent := filepath.Dir(cur)
+			if parent == cur {
+				break
+			}
+			cur = parent
+		}
+		if covered {
+			continue
+		}
+		keptSet[p] = true
+		kept = append(kept, d)
+	}
+	return kept, nil
+}
+
+func depthOf(p string) int {
+	return strings.Count(p, `\`)
+}
+
+func isDriveRoot(p string) bool {
+	v := filepath.VolumeName(p)
+	return v != "" && strings.EqualFold(p, v+`\`)
 }
 
 // treeMap 把裁剪树摊平成 路径→字节
