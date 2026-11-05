@@ -188,7 +188,7 @@ func Chat(cfg Config, plainKey, system, user string, httpClient *http.Client) (s
 			{Role: "system", Content: system},
 			{Role: "user", Content: user},
 		},
-		Temperature: 0.3, MaxTokens: 900,
+		Temperature: 0.3, MaxTokens: 600, // 200 字中文输出足够，约束模型不写长文
 	})
 	if err != nil {
 		return "", err
@@ -237,15 +237,15 @@ func Chat(cfg Config, plainKey, system, user string, httpClient *http.Client) (s
 // ExplainPrompt 构造磁盘目录解读的系统提示词与用户内容。
 // kbHits 为知识库命中的「名称：描述」列表（可为空）；样本目录/文件帮助模型判断内容性质。
 func ExplainPrompt(path string, sizeBytes, fileCount int64, kbHits []string, sampleDirs, sampleFiles []string) (string, string) {
-	system := `你是一个 Windows 磁盘清理助手，帮用户判断目录里是什么、能不能删。
-要求：
-1. 用简体中文，直接给结论，不要客套话；
-2. 按下面结构回答，每节一行到三行，不要展开过多：
-   【这是什么】目录用途判断
-   【能否删除】给出结论：可删 / 谨慎 / 别删，并说明删除后果
-   【建议】最多 3 条具体做法
-3. 信息不足时明确说"根据现有信息无法确定"，不要编造；
-4. 不要重复罗列原始数据。`
+	system := `你是 Windows 磁盘清理助手，读者是不懂编程的普通用户。
+风格：
+1. 说人话：避免行话；必须用术语时，紧跟一句大白话解释或生活化比方（如"缓存=快递中转仓，下载一次各项目共用"）；
+2. 克制：全文 200 字以内，宁可少说，不事无巨细；
+3. 固定三段，每段一两句：
+【这是什么】1 句，带类比，让小白秒懂
+【能否删除】结论（可删/谨慎/别删）+ 后果 1 句
+【建议】最多 2 条，给可直接执行的命令或动作
+4. 信息不足就写"无法确定"，不编造；不复述任何原始数据。`
 
 	var b strings.Builder
 	b.WriteString("请解读这个目录：\n\n")

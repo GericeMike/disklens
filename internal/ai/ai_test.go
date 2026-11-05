@@ -158,15 +158,18 @@ func TestChatMock(t *testing.T) {
 	}
 }
 
-// TestExplainPrompt 提示词包含关键上下文
+// TestExplainPrompt 提示词包含关键上下文与风格约束
 func TestExplainPrompt(t *testing.T) {
 	system, user := ExplainPrompt(`C:\demo`, 5<<30, 123,
 		[]string{"缓存目录（谨慎）：存放更新包"},
 		[]string{"cache(1.2 GB)", "logs(20 MB)"},
 		[]string{"setup.exe", "readme.txt"},
 	)
-	if !strings.Contains(system, "能否删除") || !strings.Contains(system, "简体中文") {
-		t.Errorf("系统提示词缺少关键要求")
+	// 面向小白的讲人话要求 + 字数克制 + 三段结构
+	for _, want := range []string{"说人话", "大白话", "200 字", "能否删除", "编造"} {
+		if !strings.Contains(system, want) {
+			t.Errorf("系统提示词缺少 %q", want)
+		}
 	}
 	for _, want := range []string{`C:\demo`, "5.0 GB", "123", "cache(1.2 GB)", "setup.exe", "缓存目录"} {
 		if !strings.Contains(user, want) {
