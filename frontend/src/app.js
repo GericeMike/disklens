@@ -125,6 +125,7 @@ async function renderOverview() {
   // 盘概览水位条兼任 treemap 的盘切换标签
   const biggest = [...(d.drives || [])].sort((a, b) => (b.total - b.free) - (a.total - a.free))[0];
   const roots = (d.roots && d.roots.length) ? d.roots : (biggest ? [biggest.letter] : ['C:\\']);
+  state.scanRoots = roots; // 面包屑顶界与盘切换定位用
   if (!state.treemapRoot || !roots.some(r => r.toLowerCase() === String(state.treemapRoot).toLowerCase())) {
     state.treemapRoot = roots[0];
   }
@@ -176,14 +177,15 @@ function renderDrives(drives, selected) {
   wrap.querySelectorAll('.kpi').forEach((cell, i) => {
     cell.addEventListener('click', () => {
       const d = drives[i];
-      if (!d || state.treemapRoot === d.letter) return;
-      state.treemapRoot = d.letter;
+      const root = rootOfDrive(d.letter);
+      if (!d || state.treemapRoot === root) return;
+      state.treemapRoot = root;
       state.treemapOthers = null;
       wrap.querySelectorAll('.kpi').forEach((c, j) => c.setAttribute('aria-selected', j === i ? 'true' : 'false'));
       wrap.querySelectorAll('.kpi-label').forEach((l, j) => {
         l.textContent = `${drives[j].letter} 磁盘${j === i ? ' · 正在查看' : ''}`;
       });
-      loadTreemap(d.letter);
+      loadTreemap(root);
       renderClean(d.letter); // 可清理项跟随当前所选盘
     });
   });
@@ -239,16 +241,50 @@ async function renderClean(drive) {
 }
 
 // ---------- treemap 下钻 ----------
-function crumbSegs(path) {
-  const segs = [];
-  if (/^[a-zA-Z]:\\?$/.test(path)) { segs.push(path); return segs; }
-  let acc = '';
-  for (const seg of path.split('\\')) {
-    if (seg === '') continue;
-    acc = acc ? acc + '\\' + seg : seg + '\\';
+// rootOfDrive 本次扫描中某盘的实际根：整盘扫描→盘根；子文件夹扫描→该盘的扫描根。
+// 混合扫描（C:\ + D:\GJQMTTest）点 D 盘标签应落到 D:\GJQMTTest 而不是空的 D:\
+function rootOfDrive(letter) {
+  const ls = String(letter || '').toLowerCase();
+  for (const r of state.scanRoots || []) {
+    if (String(r).toLowerCase().startsWith(ls)) return r;
+  }
+  return letter;
+}
+
+// crumbSegs 面包屑段列表；顶层裁剪到所属扫描根——
+// 存档只有 D:\GJQMTTest 时最高层就是它，不出现点了是空的盘根 D:
+function crumbSegs(path, tops) {
+  const clean = s => String(s).replace(/\\+$/, '');
+  const p = clean(path);
+  // 所属扫描根：最长前缀匹配（含自身）
+  let top = '';
+  (tops || []).forEach(r => {
+    const rc = clean(r);
+    const pn = p.toLowerCase(), rn = rc.toLowerCase();
+    if ((pn === rn || pn.startsWith(rn + '\\')) && rc.length > top.length) top = rc;
+  });
+  if (!top) {
+    // 无扫描根信息（demo 等）：退回盘符
+    const m = p.match(/^[a-zA-Z]:/);
+    top = m ? m[0] : p;
+  }
+  // 裸盘符顶段保持 "C:\" 形式（存档树根键）；子目录根用无尾形式（索引键为 Clean 后路径）
+  const topSeg = /^[a-zA-Z]:$/.test(top) ? top + '\\' : top;
+  const segs = [topSeg];
+  let acc = topSeg;
+  for (const seg of p.slice(top.length).split('\\')) {
+    if (!seg) continue;
+    acc = acc + '\\' + seg;
     segs.push(acc);
   }
   return segs;
+}
+
+// 面包屑首段标签：盘根显示 "C:"，子目录根显示目录名（GJQMTTest）
+function crumbLabel(p) {
+  const clean = String(p).replace(/\\+$/, '');
+  if (/^[a-zA-Z]:$/.test(clean)) return clean;
+  return nodeName(clean);
 }
 
 async function loadTreemap(path) {
@@ -265,10 +301,10 @@ async function loadTreemap(path) {
   // 面包屑
   const crumb = $('#tm-crumb');
   $('#tm-title').textContent = `${path} · 方块地图`;
-  const segs = crumbSegs(path);
+  const segs = crumbSegs(path, state.scanRoots);
   crumb.innerHTML = segs.map((p, i) => {
     const cur = i === segs.length - 1;
-    const label = i === 0 ? p.replace(/\\$/, '') : nodeName(p);
+    const label = crumbLabel(p);
     return `${i > 0 ? '<span class="sep">›</span>' : ''}<button data-p="${esc(p)}" aria-current="${cur}">${esc(label)}</button>`;
   }).join('');
   crumb.querySelectorAll('button').forEach(b => b.addEventListener('click', () => loadTreemap(b.dataset.p)));
@@ -303,8 +339,8 @@ function loadOthersView(basePath, items) {
   });
   const crumb = $('#tm-crumb');
   $('#tm-title').textContent = `${basePath} · 小项 ${items.length} 个`;
-  const segs = crumbSegs(basePath);
-  let html = segs.map((p, i) => `${i > 0 ? '<span class="sep">›</span>' : ''}<button data-p="${esc(p)}">${esc(i === 0 ? p.replace(/\\$/, '') : nodeName(p))}</button>`).join('');
+  const segs = crumbSegs(basePath, state.scanRoots);
+  let html = segs.map((p, i) => `${i > 0 ? '<span class="sep">›</span>' : ''}<button data-p="${esc(p)}">${esc(crumbLabel(p))}</button>`).join('');
   html += `<span class="sep">›</span><button aria-current="true">其他 ${items.length} 项</button>`;
   crumb.innerHTML = html;
   crumb.querySelectorAll('button[data-p]').forEach(b => b.addEventListener('click', () => loadTreemap(b.dataset.p)));
