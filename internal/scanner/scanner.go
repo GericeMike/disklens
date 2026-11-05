@@ -228,8 +228,10 @@ func (s *scanner) processDir(ns *nodeState, sh *shardStat) {
 
 	var children []*nodeState
 	var localBytes, localFiles int64
+	// 根节点 Path0 以反斜杠结尾（C:\），直接拼会产生 C:\\Users 双反斜杠，先去尾
+	base := strings.TrimSuffix(ns.node.Path0, `\`)
 	for _, e := range entries {
-		full := ns.node.Path0 + "\\" + e.Name()
+		full := base + "\\" + e.Name()
 		if e.IsDir() {
 			// junction/符号链接跳过（防循环、防重复计数）
 			if info, ierr := e.Info(); ierr == nil {

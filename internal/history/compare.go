@@ -59,8 +59,10 @@ func treeMap(s *Snapshot) map[string]int64 {
 	}
 	for _, r := range s.Roots {
 		m[r.Name] = r.Bytes // 根本身
+		// 去尾分隔符再拼，避免 C:\\Users 式双反斜杠键
+		base := strings.TrimSuffix(r.Name, `\`)
 		for _, c := range r.Children {
-			walk(c, r.Name)
+			walk(c, base)
 		}
 	}
 	return m

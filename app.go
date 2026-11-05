@@ -318,11 +318,11 @@ func (a *App) ExplainPath(path string) []KBHitOut {
 		}
 		if idx != nil {
 			for _, p := range h.Exists {
-				if n, ok := idx[strings.ToLower(p)]; ok {
+				if n, ok := idx[strings.ToLower(filepath.Clean(p))]; ok {
 					o.Sizes[p] = n.Bytes
 				}
 			}
-			if n, ok := idx[strings.ToLower(path)]; ok {
+			if n, ok := idx[strings.ToLower(filepath.Clean(path))]; ok {
 				o.Sizes["__self"] = n.Bytes
 			}
 		}

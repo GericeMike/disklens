@@ -119,24 +119,19 @@ func BuildTreeIndex(res *scanner.Result) TreeIndex {
 	return idx
 }
 
-// ChildrenOf 从索引取某路径的子目录列表（按大小降序）
+// ChildrenOf 从索引取某路径的子目录列表（按大小降序）。
+// 子路径 = 去尾分隔符的自身路径 + 子名；不能用 parentPath——那会丢掉最后一级
+// （如 C:\Users 的子目录曾被拼成 C:\GericeMike，下钻深层全部扑空）。
 func ChildrenOf(idx TreeIndex, path string) []CleanPath {
 	n, ok := idx[strings.ToLower(filepath.Clean(path))]
 	if !ok {
 		return nil
 	}
+	base := strings.TrimSuffix(filepath.Clean(path), `\`)
 	out := make([]CleanPath, 0, len(n.Children))
 	for _, c := range n.Children {
-		out = append(out, CleanPath{Path: parentPath(path) + "\\" + c.Name, Size: c.Bytes, Files: c.Files})
+		out = append(out, CleanPath{Path: base + "\\" + c.Name, Size: c.Bytes, Files: c.Files})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Size > out[j].Size })
 	return out
-}
-
-func parentPath(p string) string {
-	i := strings.LastIndexAny(p, `\/`)
-	if i <= 0 {
-		return p
-	}
-	return p[:i]
 }

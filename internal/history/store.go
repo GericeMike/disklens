@@ -15,7 +15,8 @@ import (
 )
 
 // pruneDepth 历史树保留层数（根=0）。更深的层级丢弃子表，聚合值保留在祖先节点。
-const pruneDepth = 4
+// 4 层时 AppData\Local（第 4 层）之下无法下钻；8 层覆盖 Users→AppData→Local→uv→cache 等常用深度。
+const pruneDepth = 8
 
 // Version 存档格式版本
 const Version = 1
@@ -213,8 +214,10 @@ func SnapshotToResult(snap *Snapshot) *scanner.Result {
 	for _, r := range snap.Roots {
 		// 保持存档中的原始根名（可能是盘根，也可能是子目录根），仅重建 Path0 链
 		r.Path0 = r.Name
+		// 根名以反斜杠结尾（C:\）时直接拼会得到 C:\\Users 双反斜杠，先去尾
+		base := strings.TrimSuffix(r.Name, `\`)
 		for _, c := range r.Children {
-			rebuild(c, r.Name)
+			rebuild(c, base)
 		}
 	}
 	res.Roots = snap.Roots
