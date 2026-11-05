@@ -250,9 +250,10 @@ function crumbSegs(path) {
 }
 
 async function loadTreemap(path) {
+  const el = $('#treemap');
+  if (!el) return; // 视图未挂载（启动早期 ResizeObserver 防抖可能先于模板注入触发）
   state.treemapPath = path;
   state.treemapOthers = null; // 真实路径导航离开"其他"视图
-  const el = $('#treemap');
   let kids;
   if (!state.demo) {
     kids = await api().GetChildren(path);
@@ -288,10 +289,11 @@ async function loadTreemap(path) {
 
 // "其他 N 项"专属视图: 被聚合的小项独立成图，脱离大项竞争后全部可读可点
 function loadOthersView(basePath, items) {
+  const el = $('#treemap');
+  if (!el) return; // 视图未挂载
   // items 来自 renderTreemap 的 others 返回值，字段是 {name, value, path}（value 为真实字节）
   const norm = (items || []).map(k => ({ name: k.name, bytes: k.value, path: k.path }));
   state.treemapOthers = { basePath, items: norm };
-  const el = $('#treemap');
   const h = el.clientHeight > 300 ? el.clientHeight : 460;
   renderTreemap(el, norm.map(k => ({ name: k.name, value: k.bytes, path: k.path })), {
     ramps: RAMPS[curStyle()], fmt: fmtGB, unit: '', height: h, scaleExp: 0.55,
@@ -309,8 +311,9 @@ function loadOthersView(basePath, items) {
 
 // 当前目录文字列表: 与左侧地图同步，点击行下钻，ⓘ 打开解释抽屉
 function renderDirList(path, kids, titleOverride) {
-  $('#dl-title').textContent = titleOverride || `${path} · ${kids.length} 个子目录`;
   const el = $('#dirlist');
+  if (!el) return; // 视图未挂载
+  $('#dl-title').textContent = titleOverride || `${path} · ${kids.length} 个子目录`;
   if (!kids.length) {
     el.innerHTML = `<div class="empty-inline">此目录没有子目录</div>`;
     return;
@@ -322,6 +325,7 @@ function renderDirList(path, kids, titleOverride) {
       ${k.kbName ? `<span class="dkb" title="${esc(k.kbName)}">${esc(k.kbName)}</span>` : ''}
       <span class="dsize num">${fmtGB(k.bytes)}</span>
       <button class="dinfo" data-explain="${esc(k.path)}" title="知识库解释">ⓘ</button>
+      <button class="ddel" data-del="${esc(k.path)}" data-name="${esc(k.name)}" data-bytes="${k.bytes || 0}" data-risk="${esc(k.risk || '')}" title="送入回收站">🗑</button>
     </div>`).join('');
   el.querySelectorAll('.dir-row').forEach(row => {
     row.addEventListener('click', () => loadTreemap(row.dataset.p));
@@ -329,6 +333,75 @@ function renderDirList(path, kids, titleOverride) {
   el.querySelectorAll('.dinfo').forEach(btn => {
     btn.addEventListener('click', (e) => { e.stopPropagation(); openExplain(btn.dataset.explain); });
   });
+  el.querySelectorAll('.ddel').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDelModal(btn.dataset.del, btn.dataset.name, Number(btn.dataset.bytes) || 0, btn.dataset.risk);
+    });
+  });
+}
+
+// ---------- 删除确认弹窗（一律送回收站） ----------
+let delTarget = null;
+
+async function openDelModal(path, name, bytes, risk) {
+  if (!path || state.demo) return;
+  delTarget = path;
+  $('#del-info').innerHTML = `
+    <div class="del-item">
+      ${risk ? riskPill(risk) : ''}
+      <b>${esc(name)}</b>
+      <span class="num" style="color:var(--muted)">${fmtGB(bytes)}</span>
+      <div class="del-path">${esc(path)}</div>
+    </div>`;
+  const errBox = $('#del-error');
+  errBox.classList.add('hidden');
+  errBox.textContent = '';
+  const confirmBtn = $('#del-confirm');
+  confirmBtn.disabled = false;
+  confirmBtn.classList.remove('hidden');
+  // 锁定预检：被硬锁的路径提前说明原因，不给点确认的机会
+  try {
+    const pre = await api().CheckDelete([path]);
+    if (pre && pre[0] && !pre[0].ok) {
+      errBox.textContent = `无法删除：${pre[0].reason}`;
+      errBox.classList.remove('hidden');
+      confirmBtn.disabled = true;
+    }
+  } catch (e) { /* 预检失败不阻塞，最终删除时后端仍会校验 */ }
+  $('#del-modal').classList.remove('hidden');
+}
+
+function closeDelModal() {
+  $('#del-modal').classList.add('hidden');
+  delTarget = null;
+}
+
+async function confirmDelete() {
+  if (!delTarget) return;
+  const btn = $('#del-confirm');
+  btn.disabled = true;
+  btn.textContent = '删除中…';
+  try {
+    const res = await api().DeleteToRecycle([delTarget]);
+    const r = res && res[0];
+    if (!r || !r.ok) {
+      const errBox = $('#del-error');
+      errBox.textContent = `删除失败：${(r && r.reason) || '未知原因'}`;
+      errBox.classList.remove('hidden');
+      btn.textContent = '移入回收站';
+      return; // 保留弹窗让用户看到原因
+    }
+    closeDelModal();
+    // 刷新当前视图与可清理清单（数据来自内存扫描树，删除的目录大小置零后需重取）
+    await loadTreemap(state.treemapPath || state.treemapRoot);
+    renderClean(state.treemapRoot);
+  } catch (e) {
+    const errBox = $('#del-error');
+    errBox.textContent = `删除失败：${e}`;
+    errBox.classList.remove('hidden');
+    btn.textContent = '移入回收站';
+  }
 }
 
 function nodeName(p) {
@@ -660,6 +733,8 @@ async function boot() {
   $('#drawer-backdrop').addEventListener('click', closeExplain);
   $('#scan-cancel').addEventListener('click', () => $('#scan-modal').classList.add('hidden'));
   $('#scan-start').addEventListener('click', startScan);
+  $('#del-cancel').addEventListener('click', closeDelModal);
+  $('#del-confirm').addEventListener('click', confirmDelete);
   wireScanEvents();
   // 真实模式：无内存数据时先尝试自动恢复最近一次存档
   if (!state.demo) {

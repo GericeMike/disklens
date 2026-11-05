@@ -13,6 +13,7 @@ import (
 
 	"disklens/internal/history"
 	"disklens/internal/kb"
+	"disklens/internal/recycle"
 	"disklens/internal/scanner"
 
 	"golang.org/x/sys/windows"
@@ -349,6 +350,92 @@ func (a *App) OpenFolder(path string) error {
 	}
 	// explorer 打开目录；explorer 的返回码不可靠，只 Start 不 Wait
 	return exec.Command("explorer.exe", path).Start()
+}
+
+// DeleteResult 单项删除结果
+type DeleteResult struct {
+	Path   string `json:"path"`
+	OK     bool   `json:"ok"`
+	Reason string `json:"reason,omitempty"`
+}
+
+// DeleteToRecycle 送回收站删除（系统路径硬锁在 recycle 包内强制校验）
+func (a *App) DeleteToRecycle(paths []string) []DeleteResult {
+	if len(paths) == 0 {
+		return []DeleteResult{}
+	}
+	res := recycle.SendToRecycle(paths)
+	out := make([]DeleteResult, 0, len(res))
+	var removed []string
+	for _, r := range res {
+		out = append(out, DeleteResult{Path: r.Path, OK: r.OK, Reason: r.Reason})
+		if r.OK {
+			removed = append(removed, r.Path)
+		}
+	}
+	// 内存扫描树同步移除（父链减值 + 索引清理），GUI 刷新后不再显示已删目录
+	a.removeNodes(removed)
+	a.emit("deleted:done", map[string]any{"count": len(out)})
+	return out
+}
+
+// removeNodes 从内存树/索引中移除已删除目录，祖先逐级扣减聚合值
+func (a *App) removeNodes(paths []string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	idx := a.index
+	if idx == nil {
+		return
+	}
+	for _, p := range paths {
+		key := strings.ToLower(filepath.Clean(p))
+		node, ok := idx[key]
+		if !ok {
+			continue
+		}
+		// 从父节点 Children 中摘除
+		parentKey := strings.ToLower(filepath.Dir(key))
+		if parent, ok := idx[parentKey]; ok {
+			for i, c := range parent.Children {
+				if c == node {
+					parent.Children = append(parent.Children[:i], parent.Children[i+1:]...)
+					break
+				}
+			}
+		}
+		// 祖先链逐级减值（含根）
+		curPath := key
+		for {
+			cur, ok := idx[curPath]
+			if !ok {
+				break
+			}
+			cur.Bytes -= node.Bytes
+			cur.Files -= node.Files
+			cur.Dirs -= node.Dirs + 1
+			parent := filepath.Dir(curPath)
+			if strings.EqualFold(parent, curPath) {
+				break // 已到盘根
+			}
+			curPath = parent
+		}
+		// 索引中清除该子树所有键
+		prefix := key + `\`
+		for k := range idx {
+			if k == key || strings.HasPrefix(k, prefix) {
+				delete(idx, k)
+			}
+		}
+	}
+}
+
+// CheckDelete 预检：返回每个路径的锁定原因（空串=允许），供确认弹窗展示
+func (a *App) CheckDelete(paths []string) []DeleteResult {
+	out := make([]DeleteResult, 0, len(paths))
+	for _, p := range paths {
+		out = append(out, DeleteResult{Path: p, OK: recycle.Check(p) == "", Reason: recycle.Check(p)})
+	}
+	return out
 }
 
 // ListHistoryScans 历史列表（新→旧）

@@ -118,6 +118,22 @@ export namespace kb {
 
 export namespace main {
 	
+	export class DeleteResult {
+	    path: string;
+	    ok: boolean;
+	    reason?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeleteResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.path = source["path"];
+	        this.ok = source["ok"];
+	        this.reason = source["reason"];
+	    }
+	}
 	export class DriveOption {
 	    letter: string;
 	    total: number;

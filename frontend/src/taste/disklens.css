@@ -199,6 +199,10 @@ html[data-style="terminal"] .drawer.open { box-shadow: -12px 0 28px rgba(0,0,0,.
 .ex-open { flex: none; border: 1px solid var(--border); background: var(--raised); color: var(--text); font: inherit; font-size: var(--fs-small); padding: 1px 9px; border-radius: 4px; cursor: pointer; }
 .ex-open:hover { border-color: var(--accent); color: var(--accent); }
 .ex-open:disabled { opacity: 0.45; cursor: default; }
+.ddel { flex: none; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px; }
+.ddel:hover { color: #e5484d; background: rgba(229, 72, 77, 0.12); }
+.del-item { font-size: var(--fs-small); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.del-item .del-path { flex-basis: 100%; color: var(--muted); word-break: break-all; font-family: var(--font-mono, monospace); font-size: 12px; }
 .ex-clean li { padding: 3px 0; font-size: var(--fs-small); }
 
 /* ---------- 面包屑 ---------- */

@@ -83,6 +83,20 @@
         </div>
     </div>
 
+    <!-- 删除确认弹窗（一律送回收站，可还原） -->
+    <div class="modal-backdrop hidden" id="del-modal">
+        <div class="modal">
+            <h3>确认删除</h3>
+            <div class="sub">将移入回收站，可在回收站还原；系统路径被硬锁定，无法删除</div>
+            <div id="del-info"></div>
+            <div class="scan-error hidden" id="del-error"></div>
+            <footer>
+                <button class="btn" id="del-cancel">取消</button>
+                <button class="btn primary" id="del-confirm">移入回收站</button>
+            </footer>
+        </div>
+    </div>
+
     <script type="module" src="/src/app.js"></script>
 </body>
 </html>
