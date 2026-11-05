@@ -360,28 +360,42 @@ async function openDelModal(path, name, bytes, risk) {
   errBox.classList.add('hidden');
   errBox.textContent = '';
   const confirmBtn = $('#del-confirm');
-  confirmBtn.disabled = false;
-  confirmBtn.classList.remove('hidden');
+  // 预检未定期间确认按钮必须禁用：弹窗先显示，检查完成才允许点"确认删除"，
+  // 杜绝"图标点完没等确认删除就开跑"的竞态
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = '检查中…';
+  $('#del-modal').classList.remove('hidden');
+  $('#del-cancel').focus(); // 焦点放取消：误按回车/空格走安全方向
   // 锁定预检：被硬锁的路径提前说明原因，不给点确认的机会
   try {
     const pre = await api().CheckDelete([path]);
     if (pre && pre[0] && !pre[0].ok) {
       errBox.textContent = `无法删除：${pre[0].reason}`;
       errBox.classList.remove('hidden');
+      confirmBtn.textContent = '确认删除';
       confirmBtn.disabled = true;
+      return;
     }
-  } catch (e) { /* 预检失败不阻塞，最终删除时后端仍会校验 */ }
-  $('#del-modal').classList.remove('hidden');
+    confirmBtn.textContent = '确认删除';
+    confirmBtn.disabled = false;
+  } catch (e) {
+    // 预检失败不阻塞（最终删除时后端仍会校验），但同样等本轮结束才放行
+    confirmBtn.textContent = '确认删除';
+    confirmBtn.disabled = false;
+  }
 }
 
 function closeDelModal() {
   $('#del-modal').classList.add('hidden');
   delTarget = null;
+  const btn = $('#del-confirm');
+  btn.disabled = false;
+  btn.textContent = '确认删除';
 }
 
 async function confirmDelete() {
-  if (!delTarget) return;
   const btn = $('#del-confirm');
+  if (!delTarget || btn.disabled) return; // 无目标或预检未放行：绝不执行
   btn.disabled = true;
   btn.textContent = '删除中…';
   try {
@@ -391,7 +405,7 @@ async function confirmDelete() {
       const errBox = $('#del-error');
       errBox.textContent = `删除失败：${(r && r.reason) || '未知原因'}`;
       errBox.classList.remove('hidden');
-      btn.textContent = '移入回收站';
+      btn.textContent = '确认删除';
       return; // 保留弹窗让用户看到原因
     }
     closeDelModal();
