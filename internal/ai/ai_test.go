@@ -178,7 +178,7 @@ func TestExplainPrompt(t *testing.T) {
 	}
 	// 无知识库命中也要有占位说明
 	_, user2 := ExplainPrompt(`C:\x`, 1, 1, nil, nil, nil)
-	if !strings.Contains(user2, "无该目录条目") {
+	if !strings.Contains(user2, "无该路径条目") {
 		t.Errorf("无命中时应说明知识库无条目")
 	}
 }

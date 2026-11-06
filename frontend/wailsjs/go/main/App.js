@@ -26,6 +26,10 @@ export function GetAIConfig() {
   return window['go']['main']['App']['GetAIConfig']();
 }
 
+export function GetCategoryFiles(arg1) {
+  return window['go']['main']['App']['GetCategoryFiles'](arg1);
+}
+
 export function GetChildren(arg1) {
   return window['go']['main']['App']['GetChildren'](arg1);
 }
@@ -60,6 +64,10 @@ export function ListHistoryScans() {
 
 export function LoadLatestScan() {
   return window['go']['main']['App']['LoadLatestScan']();
+}
+
+export function OpenFileLocation(arg1) {
+  return window['go']['main']['App']['OpenFileLocation'](arg1);
 }
 
 export function OpenFolder(arg1) {

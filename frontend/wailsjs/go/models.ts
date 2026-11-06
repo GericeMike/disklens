@@ -253,6 +253,8 @@ export namespace main {
 	    path: string;
 	    size: number;
 	    modTime: string;
+	    risk?: string;
+	    kbName?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new FileRow(source);
@@ -263,6 +265,8 @@ export namespace main {
 	        this.path = source["path"];
 	        this.size = source["size"];
 	        this.modTime = source["modTime"];
+	        this.risk = source["risk"];
+	        this.kbName = source["kbName"];
 	    }
 	}
 	export class HistoryItem {

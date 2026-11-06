@@ -241,6 +241,27 @@ html[data-style="terminal"] .drawer.open { box-shadow: -12px 0 28px rgba(0,0,0,.
 .ex-open:disabled { opacity: 0.45; cursor: default; }
 .ddel { flex: none; border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px; }
 .ddel:hover { color: #e5484d; background: rgba(229, 72, 77, 0.12); }
+.dopen { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 13px; padding: 2px 4px; border-radius: 4px; }
+.dopen:hover { color: var(--text); background: var(--active); }
+
+/* ---------- 文件行（最大文件榜/类型明细共用表格行） ---------- */
+.frow td { padding: 6px 8px; }
+.frow .fops { white-space: nowrap; }
+.frow .fops button { vertical-align: middle; }
+.frow .fwrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.frow .fwrap .truncate { flex: 1; min-width: 0; max-width: none; }
+
+/* ---------- 文件类型统计：可点击类型行（bar 视觉与 barList 同款） ---------- */
+.type-row { position: relative; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 12px; padding: 10px 12px; border-radius: 6px; cursor: pointer; isolation: isolate; overflow: hidden; }
+.type-row + .type-row { margin-top: 2px; }
+.type-row .type-bar { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--bar-fill, color-mix(in srgb, var(--chart-1, #2f6fdf) 12%, transparent)); border-radius: inherit; z-index: -1; }
+.type-row:hover, .type-row:focus-visible { background: var(--raised); }
+.type-row .type-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.type-row .type-size { font-weight: 500; text-align: right; }
+
+/* ---------- 类型明细视图头部 ---------- */
+.cat-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.cat-head .cat-title { color: var(--muted); }
 .del-item { font-size: var(--fs-small); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .del-item .del-path { flex-basis: 100%; color: var(--muted); word-break: break-all; font-family: var(--font-mono, monospace); font-size: 12px; }
 .ex-clean li { padding: 3px 0; font-size: var(--fs-small); }

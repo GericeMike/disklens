@@ -249,7 +249,7 @@ func ExplainPrompt(path string, sizeBytes, fileCount int64, kbHits []string, sam
 5. 信息不足就写"无法确定"，不编造；不复述任何原始数据。`
 
 	var b strings.Builder
-	b.WriteString("请解读这个目录：\n\n")
+	b.WriteString("请解读这个路径（目录或单个文件）：\n\n")
 	fmt.Fprintf(&b, "路径：%s\n", path)
 	b.WriteString(fmt.Sprintf("总占用：%s，文件数：%d\n", HumanBytes(sizeBytes), fileCount))
 	if len(sampleDirs) > 0 {
@@ -264,7 +264,7 @@ func ExplainPrompt(path string, sizeBytes, fileCount int64, kbHits []string, sam
 			b.WriteString("- " + h + "\n")
 		}
 	} else {
-		b.WriteString("本地知识库：无该目录条目\n")
+		b.WriteString("本地知识库：无该路径条目\n")
 	}
 	return system, b.String()
 }

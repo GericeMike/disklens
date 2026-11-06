@@ -16,6 +16,8 @@ export function ExplainWithAI(arg1:string):Promise<main.AIExplainOut>;
 
 export function GetAIConfig():Promise<main.AIConfigOut>;
 
+export function GetCategoryFiles(arg1:string):Promise<Array<main.FileRow>>;
+
 export function GetChildren(arg1:string):Promise<Array<main.TreeNode>>;
 
 export function GetCleanSummary(arg1:string):Promise<Array<kb.CleanSummaryEntry>>;
@@ -33,6 +35,8 @@ export function ListFiles(arg1:string):Promise<Array<main.FileRow>>;
 export function ListHistoryScans():Promise<Array<main.HistoryItem>>;
 
 export function LoadLatestScan():Promise<boolean>;
+
+export function OpenFileLocation(arg1:string):Promise<void>;
 
 export function OpenFolder(arg1:string):Promise<void>;
 

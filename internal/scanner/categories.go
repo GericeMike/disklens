@@ -11,6 +11,9 @@ func categoryOf(ext string) string {
 
 var extMap = buildExtMap()
 
+// CategoryOf 按扩展名返回中文大类（导出供 GUI 类型明细列表过滤用）
+func CategoryOf(ext string) string { return categoryOf(ext) }
+
 func buildExtMap() map[string]string {
 	m := map[string]string{}
 	add := func(cat string, exts ...string) {

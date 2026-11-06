@@ -95,10 +95,10 @@ async function renderOverview() {
         <div id="growth-chart"></div>
       </section>
       <section class="panel">
-        <header><h3 style="font-size:16px;font-weight:600;">最大文件</h3></header>
+        <header><h3 style="font-size:16px;font-weight:600;">最大文件</h3><span class="meta">📂 定位 · ⓘ 解释 · 🗑 回收站</span></header>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>文件</th><th class="n">大小</th><th class="n">修改时间</th></tr></thead>
+            <thead><tr><th>文件</th><th class="n">大小</th><th class="n">修改时间</th><th class="n">操作</th></tr></thead>
             <tbody id="topfiles-body"></tbody>
           </table>
         </div>
@@ -191,21 +191,116 @@ function renderDrives(drives, selected) {
   });
 }
 
-function renderTopFiles(files) {
-  $('#topfiles-body').innerHTML = (files || []).map(f => `
-    <tr>
-      <td><span class="truncate">${esc(f.path)}</span></td>
+// ---------- 文件行（最大文件榜 / 类型明细共用）：📂 定位 · ⓘ 解释 · 🗑 回收站 ----------
+function fileRowHTML(f) {
+  const name = nodeName(f.path);
+  return `
+    <tr class="frow" data-p="${esc(f.path)}">
+      <td><span class="fwrap">${f.risk ? riskPill(f.risk) : ''}<span class="truncate" title="${esc(f.path)}">${esc(f.path)}</span></span></td>
       <td class="n num">${fmtGB(f.size)}</td>
       <td class="n num" style="color:var(--muted)">${esc(f.modTime)}</td>
-    </tr>`).join('');
+      <td class="n fops">
+        <button class="dopen" data-open="${esc(f.path)}" title="在资源管理器中定位到所在文件夹">📂</button>
+        <button class="dinfo" data-explain="${esc(f.path)}" title="知识库解释">ⓘ</button>
+        <button class="ddel" data-del="${esc(f.path)}" data-name="${esc(name)}" data-bytes="${f.size || 0}" data-risk="${esc(f.risk || '')}" title="送入回收站">🗑</button>
+      </td>
+    </tr>`;
+}
+
+// bindFileRows 统一绑定文件行三个操作按钮（打开定位/解释抽屉/删除确认弹窗）
+function bindFileRows(scope) {
+  scope.querySelectorAll('.dopen').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      btn.disabled = true;
+      try { await api().OpenFileLocation(btn.dataset.open); }
+      catch (err) { console.warn('定位失败:', err); }
+      finally { btn.disabled = false; }
+    });
+  });
+  scope.querySelectorAll('.dinfo').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); openExplain(btn.dataset.explain); });
+  });
+  scope.querySelectorAll('.ddel').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openDelModal(btn.dataset.del, btn.dataset.name, Number(btn.dataset.bytes) || 0, btn.dataset.risk);
+    });
+  });
+}
+
+function renderTopFiles(files) {
+  const body = $('#topfiles-body');
+  // 演示模式退回纯展示行（假路径不挂操作）；真实数据统一走带操作的行
+  if (state.demo || !files || !files.length) {
+    body.innerHTML = (files || []).map(f => `
+      <tr>
+        <td><span class="truncate">${esc(f.path)}</span></td>
+        <td class="n num">${fmtGB(f.size)}</td>
+        <td class="n num" style="color:var(--muted)">${esc(f.modTime)}</td>
+        <td class="n"></td>
+      </tr>`).join('');
+    return;
+  }
+  body.innerHTML = files.map(fileRowHTML).join('');
+  bindFileRows(body);
 }
 
 function renderTypes(types) {
   const el = $('#types-chart');
+  state.catView = null;
   if (!types || !types.length) { el.innerHTML = `<div class="empty-inline">暂无数据</div>`; return; }
-  Charts.barList(el, types.slice(0, 8).map(t => ({ label: `${t.category}（${comma(t.files)} 个）`, value: t.bytes })), {
-    format: fmtGB, thin: false,
+  if (state.demo) {
+    Charts.barList(el, types.slice(0, 8).map(t => ({ label: `${t.category}（${comma(t.files)} 个）`, value: t.bytes })), {
+      format: fmtGB, thin: false,
+    });
+    return;
+  }
+  // 可点击类型行：bar 视觉与 barList 同款，点开该类文件明细
+  const max = (types[0] && types[0].bytes) || 1;
+  el.innerHTML = types.slice(0, 8).map(t => `
+    <div class="type-row" data-cat="${esc(t.category)}" data-files="${t.files || 0}" role="button" tabindex="0" title="查看 ${esc(t.category)} 类文件明细">
+      <span class="type-bar" style="width:${Math.max(2, (t.bytes / max) * 100).toFixed(1)}%"></span>
+      <span class="type-label">${esc(t.category)}（${comma(t.files)} 个）</span>
+      <span class="type-size num">${fmtGB(t.bytes)}</span>
+    </div>`).join('');
+  el.querySelectorAll('.type-row').forEach(row => {
+    row.addEventListener('click', () => openCategoryView(row.dataset.cat, Number(row.dataset.files) || 0));
   });
+}
+
+// ---------- 类型明细视图：点类型行展开该类文件（实时遍历扫描根，按大小降序前 200） ----------
+let catToken = 0;
+async function openCategoryView(cat, total) {
+  const el = $('#types-chart');
+  if (!el || state.demo || !cat) return;
+  state.catView = cat;
+  const token = ++catToken;
+  el.innerHTML = `
+    <div class="cat-head">
+      <button class="btn" id="cat-back">← 返回类型统计</button>
+      <span class="cat-title"><b>${esc(cat)}</b> · 按大小排序 · 共 ${comma(total)} 个，显示前 200</span>
+    </div>
+    <div id="cat-body"><div class="empty-inline">正在统计「${esc(cat)}」类文件…（实时遍历扫描范围，范围大时可能需要数十秒）</div></div>`;
+  $('#cat-back').addEventListener('click', () => renderTypes(state.overview && state.overview.typeStats));
+  let files;
+  try {
+    files = await api().GetCategoryFiles(cat);
+  } catch (e) {
+    if (token !== catToken) return;
+    const box = $('#cat-body');
+    if (box) box.innerHTML = `<div class="empty-inline">统计失败：${esc(String(e))}</div>`;
+    return;
+  }
+  if (token !== catToken) return; // 用户已切走（重扫/返回），迟到响应不写入
+  const body = $('#cat-body');
+  if (!body) return;
+  body.innerHTML = files.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>文件</th><th class="n">大小</th><th class="n">修改时间</th><th class="n">操作</th></tr></thead>
+      <tbody>${files.map(fileRowHTML).join('')}</tbody>
+    </table></div>` : `<div class="empty-inline">该类型下没有找到文件（可能扫描后已被删除或移动）</div>`;
+  bindFileRows(body);
 }
 
 async function renderClean(drive) {
@@ -465,10 +560,11 @@ function closeDelModal() {
 async function confirmDelete() {
   const btn = $('#del-confirm');
   if (!delTarget || btn.disabled) return; // 无目标或预检未放行：绝不执行
+  const target = delTarget; // closeDelModal 会清空 delTarget，先留底用于面板摘行
   btn.disabled = true;
   btn.textContent = '删除中…';
   try {
-    const res = await api().DeleteToRecycle([delTarget]);
+    const res = await api().DeleteToRecycle([target]);
     const r = res && res[0];
     if (!r || !r.ok) {
       const errBox = $('#del-error');
@@ -481,6 +577,11 @@ async function confirmDelete() {
     // 刷新当前视图与可清理清单（数据来自内存扫描树，删除的目录大小置零后需重取）
     await loadTreemap(state.treemapPath || state.treemapRoot);
     renderClean(state.treemapRoot);
+    // 文件面板就地摘除已删行（TopFiles/类型明细是扫描快照+实时读盘，重扫前不自动消失）
+    const low = String(target || '').toLowerCase();
+    document.querySelectorAll('#topfiles-body tr.frow, #cat-body tr.frow').forEach(tr => {
+      if (String(tr.dataset.p || '').toLowerCase() === low) tr.remove();
+    });
   } catch (e) {
     const errBox = $('#del-error');
     errBox.textContent = `删除失败：${e}`;
@@ -723,7 +824,7 @@ async function openExplain(path) {
   if (!hits || !hits.length) {
     body.innerHTML = `
       <div class="ex-block"><div class="ex-head"><b>${esc(nodeName(path))}</b></div>
-      <div class="ex-desc">知识库还没有这个目录的条目。</div>
+      <div class="ex-desc">知识库还没有这个路径的条目。</div>
       <div class="ex-why">可在 %APPDATA%\\DiskLens\\kb-user.json 里添加自定义条目，或让 AI 解读。</div>
       ${state.demo ? '' : `<div class="ex-label">本机路径</div>
       <ul class="ex-paths"><li><span class="p" title="${esc(path)}">${esc(path)}</span><button class="ex-open" data-open="${esc(path)}" title="在资源管理器中打开">打开</button></li></ul>`}</div>
@@ -783,7 +884,7 @@ function aiBlockHTML(path) {
   <div class="ex-block ai-block">
     <div class="ex-label">AI 补充解读</div>
     <div id="ai-body">
-      <button class="btn ai-ask" id="ai-ask">🤖 让 AI 解读这个目录</button>
+      <button class="btn ai-ask" id="ai-ask">🤖 让 AI 解读这个路径</button>
       <div class="ai-note">需先在「设置 → AI 解释」配置 API Key；点击才会联网。</div>
     </div>
   </div>`;

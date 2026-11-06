@@ -25,11 +25,12 @@ import (
 
 // App Wails 绑定层：扫描 / 树查询 / 知识库解释 / 历史对比
 type App struct {
-	ctx      context.Context
-	mu       sync.Mutex
-	last     *scanner.Result
-	index    kb.TreeIndex
-	scanning atomic.Bool
+	ctx        context.Context
+	mu         sync.Mutex
+	last       *scanner.Result
+	index      kb.TreeIndex
+	scanning   atomic.Bool
+	catWalking atomic.Bool // 类型明细实时遍历进行中（防重入）
 }
 
 // NewApp creates a new App application struct
@@ -61,9 +62,11 @@ type DriveStat struct {
 }
 
 type FileRow struct {
-	Path    string  `json:"path"`
-	Size    int64   `json:"size"`
-	ModTime string  `json:"modTime"`
+	Path    string `json:"path"`
+	Size    int64  `json:"size"`
+	ModTime string `json:"modTime"`
+	Risk    string `json:"risk,omitempty"`  // 知识库风险等级（无命中留空）
+	KBName  string `json:"kbName,omitempty"` // 知识库条目名（无命中留空）
 }
 
 type TypeRow struct {
@@ -247,12 +250,14 @@ func (a *App) GetOverview() *OverviewData {
 			UsedPc: usedPc, AtRisk: dv.TotalBytes > 0 && float64(dv.FreeBytes)/float64(dv.TotalBytes) < 0.15,
 		})
 	}
-	// 最大文件榜前 15
+	// 最大文件榜前 15（带知识库标签）
 	for i, f := range res.TopFiles {
 		if i == 15 {
 			break
 		}
-		d.TopFiles = append(d.TopFiles, FileRow{Path: f.Path, Size: f.Size, ModTime: f.ModTime.Format("2006-01-02")})
+		row := FileRow{Path: f.Path, Size: f.Size, ModTime: f.ModTime.Format("2006-01-02")}
+		tagFileRow(&row)
+		d.TopFiles = append(d.TopFiles, row)
 	}
 	// 类型统计前 10
 	for i, t := range res.TypeStats {
@@ -278,6 +283,44 @@ func (a *App) GetOverview() *OverviewData {
 		d.Finding = fmt.Sprintf("最大目录：%s（%s）", bestName, humanBytes(bestBytes))
 	}
 	return d
+}
+
+// tagFileRow 给文件行补知识库标签（风险等级 + 条目名；无命中留空）
+func tagFileRow(f *FileRow) {
+	if hits := kb.Match(f.Path); len(hits) > 0 {
+		f.Risk = hits[0].Entry.Risk
+		f.KBName = hits[0].Entry.Name
+	}
+}
+
+// GetCategoryFiles 某文件类型大类的文件明细：实时遍历本存档扫描根，
+// 按大小降序返回前 200 条（树上不存文件明细，按需读盘；只读本地，不联网）。
+func (a *App) GetCategoryFiles(category string) ([]FileRow, error) {
+	if strings.TrimSpace(category) == "" {
+		return nil, fmt.Errorf("未指定文件类型")
+	}
+	if !a.catWalking.CompareAndSwap(false, true) {
+		return nil, fmt.Errorf("已有类型统计在进行中，请稍候")
+	}
+	defer a.catWalking.Store(false)
+	a.mu.Lock()
+	res := a.last
+	a.mu.Unlock()
+	if res == nil {
+		return nil, fmt.Errorf("没有扫描数据，请先扫描")
+	}
+	roots := make([]string, 0, len(res.Roots))
+	for _, r := range res.Roots {
+		roots = append(roots, r.Name)
+	}
+	infos := scanner.CollectCategoryFiles(roots, category, 200)
+	out := make([]FileRow, 0, len(infos))
+	for _, f := range infos {
+		row := FileRow{Path: f.Path, Size: f.Size, ModTime: f.ModTime.Format("2006-01-02")}
+		tagFileRow(&row)
+		out = append(out, row)
+	}
+	return out, nil
 }
 
 // GetChildren 某路径的子目录（treemap 下钻）
@@ -335,16 +378,19 @@ func (a *App) ExplainPath(path string) []KBHitOut {
 			Clean: h.Entry.Clean, Related: h.Entry.Related,
 			Sizes: map[string]int64{},
 		}
-		if idx != nil {
-			for _, p := range h.Exists {
-				if n, ok := idx[strings.ToLower(filepath.Clean(p))]; ok {
-					o.Sizes[p] = n.Bytes
+			if idx != nil {
+				for _, p := range h.Exists {
+					if n, ok := idx[strings.ToLower(filepath.Clean(p))]; ok {
+						o.Sizes[p] = n.Bytes
+					}
+				}
+				if n, ok := idx[strings.ToLower(filepath.Clean(path))]; ok {
+					o.Sizes["__self"] = n.Bytes
+				} else if fi, err := os.Stat(path); err == nil {
+					// 文件不在目录树（树只存目录），按实际大小给 __self
+					o.Sizes["__self"] = fi.Size()
 				}
 			}
-			if n, ok := idx[strings.ToLower(filepath.Clean(path))]; ok {
-				o.Sizes["__self"] = n.Bytes
-			}
-		}
 		out = append(out, o)
 	}
 	return out
@@ -427,27 +473,35 @@ func (a *App) ExplainWithAI(path string) (AIExplainOut, error) {
 	if apiKey == "" {
 		return out, fmt.Errorf("尚未配置 AI：请到「设置」页选择提供商并填写 API Key")
 	}
-	// 扫描树内的聚合信息与子目录样本
+	// 目标可能是目录或单个文件：文件不在树里，按实际大小与文件名构造上下文
+	fi, statErr := os.Stat(path)
+	isFile := statErr == nil && !fi.IsDir()
 	var size, files int64
 	sampleDirs := []string{}
-	idxKey := strings.ToLower(filepath.Clean(path))
-	a.mu.Lock()
-	idx := a.index
-	a.mu.Unlock()
-	if idx != nil {
-		if n, ok := idx[idxKey]; ok {
-			size, files = n.Bytes, n.Files
-			for i, c := range n.Children {
-				if i >= 8 {
-					break
+	if isFile {
+		size, files = fi.Size(), 1
+	} else {
+		idxKey := strings.ToLower(filepath.Clean(path))
+		a.mu.Lock()
+		idx := a.index
+		a.mu.Unlock()
+		if idx != nil {
+			if n, ok := idx[idxKey]; ok {
+				size, files = n.Bytes, n.Files
+				for i, c := range n.Children {
+					if i >= 8 {
+						break
+					}
+					sampleDirs = append(sampleDirs, fmt.Sprintf("%s(%s)", c.Name, humanBytes(c.Bytes)))
 				}
-				sampleDirs = append(sampleDirs, fmt.Sprintf("%s(%s)", c.Name, humanBytes(c.Bytes)))
 			}
 		}
 	}
-	// 实时文件样本（树里没有文件节点）
+	// 实时文件样本（树里没有文件节点；文件目标即样本本身）
 	sampleFiles := []string{}
-	if ents, err := os.ReadDir(path); err == nil {
+	if isFile {
+		sampleFiles = append(sampleFiles, filepath.Base(path))
+	} else if ents, err := os.ReadDir(path); err == nil {
 		n := 0
 		for _, e := range ents {
 			if e.IsDir() {
@@ -493,6 +547,18 @@ func (a *App) OpenFolder(path string) error {
 	}
 	// explorer 打开目录；explorer 的返回码不可靠，只 Start 不 Wait
 	return exec.Command("explorer.exe", path).Start()
+}
+
+// OpenFileLocation 在资源管理器中打开文件所在文件夹并选中该文件（用户主动触发）
+func (a *App) OpenFileLocation(path string) error {
+	if path == "" {
+		return fmt.Errorf("路径为空")
+	}
+	if _, err := os.Stat(path); err != nil {
+		return fmt.Errorf("路径不存在: %s", path)
+	}
+	// explorer /select, 会在父窗口中高亮该文件；返回码不可靠，只 Start 不 Wait
+	return exec.Command("explorer.exe", "/select,"+path).Start()
 }
 
 // DeleteResult 单项删除结果
