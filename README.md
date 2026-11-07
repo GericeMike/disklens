@@ -114,3 +114,12 @@ go test ./...      # 单元测试（扫描器级联/对比折叠/删除硬锁/AI
 - 除用户主动配置并点击「AI 补充解读」外，程序不发起任何网络请求
 - AI Key 经 Windows DPAPI 加密后存储，绑定当前用户，不明文落盘
 - 删除操作全部走系统回收站，系统目录在代码层硬锁
+
+## 致谢
+
+- [Wails](https://wails.io) — Go 桌面应用框架，本项目跨语言 GUI 的地基
+- [Go](https://go.dev) 与全部开源依赖（见 `go.mod`）
+- 自托管字体：IBM Plex / JetBrains Mono / Public Sans / Nunito（各为其官方开源发行版）
+
+本项目由 GericeMike 设计、验收与维护，编码过程由 AI 结对完成（相关提交含
+`Co-authored-by` 标注）。
