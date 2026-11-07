@@ -12,3 +12,6 @@ _gui-drive.ps1
 /_scroll-test.png
 /_cua-*.png
 /_cua-scrollinto.png
+
+# 本机交接文档（含个人环境细节，不入公开仓库）
+HANDOFF.md

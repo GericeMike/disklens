@@ -47,8 +47,7 @@ func TestCheckLocks(t *testing.T) {
 		{filepath.Join(home, `Downloads`), false, ""},
 		// 放行：普通目录
 		{`C:\baidunetdiskdownload`, false, ""},
-		{`D:\下载`, false, ""},
-		{`C:\AI\test3`, false, ""},
+		{`C:\AI`, false, ""},
 	}
 	for _, c := range cases {
 		reason := Check(c.path)
