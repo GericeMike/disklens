@@ -93,6 +93,7 @@ func abs2(v int64) int64 {
 func cmdScan(argv []string) int {
 	fs := flag.NewFlagSet("scan", flag.ContinueOnError)
 	workers := fs.Int("workers", 8, "并发 worker 数")
+	fast := fs.Bool("fast", false, "增量扫描（复用未变化的叶子目录；无匹配历史存档时自动全量）")
 	if err := fs.Parse(argv); err != nil {
 		return 2
 	}
@@ -108,7 +109,7 @@ func cmdScan(argv []string) int {
 	started := time.Now()
 
 	var progressLine string
-	res, err := scanner.Scan(scanner.Options{
+	opt := scanner.Options{
 		Roots:   roots,
 		Workers: *workers,
 		Progress: func(files, dirs int64, bytes int64) {
@@ -120,7 +121,15 @@ func cmdScan(argv []string) int {
 			progressLine = line
 			fmt.Print(line)
 		},
-	})
+	}
+	if *fast {
+		opt.Incremental = true
+		opt.Prev = history.PrevForScope(roots)
+		if opt.Prev == nil {
+			fmt.Println("  （无匹配范围的历史存档，本次执行完整扫描）")
+		}
+	}
+	res, err := scanner.Scan(opt)
 	if err != nil {
 		fmt.Println("\n扫描失败:", err)
 		return 1

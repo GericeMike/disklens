@@ -262,6 +262,11 @@ html[data-style="terminal"] .drawer.open { box-shadow: -12px 0 28px rgba(0,0,0,.
 /* ---------- 类型明细视图头部 ---------- */
 .cat-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
 .cat-head .cat-title { color: var(--muted); }
+
+/* ---------- 扫描弹窗：增量扫描勾选 ---------- */
+.scan-inc-row { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; cursor: pointer; }
+.scan-inc-row input { accent-color: var(--accent, currentColor); }
+.scan-inc-row small { color: var(--muted); }
 .del-item { font-size: var(--fs-small); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .del-item .del-path { flex-basis: 100%; color: var(--muted); word-break: break-all; font-family: var(--font-mono, monospace); font-size: 12px; }
 .ex-clean li { padding: 3px 0; font-size: var(--fs-small); }

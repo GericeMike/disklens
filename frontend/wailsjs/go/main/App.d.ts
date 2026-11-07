@@ -46,4 +46,6 @@ export function SelectDirectory():Promise<string>;
 
 export function StartScan(arg1:Array<string>):Promise<void>;
 
+export function StartScanEx(arg1:Array<string>,arg2:boolean):Promise<void>;
+
 export function TestAI():Promise<string>;

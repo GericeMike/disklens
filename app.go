@@ -160,8 +160,16 @@ func (a *App) emit(event string, args ...any) {
 	wailsruntime.EventsEmit(a.ctx, event, args...)
 }
 
-// StartScan 启动后台扫描（异步），进度经事件推送：scan:progress / scan:done / scan:error
+// StartScan 启动后台扫描（异步，默认增量模式：无匹配历史时自动退化为全量），
+// 进度经事件推送：scan:progress / scan:done / scan:error
 func (a *App) StartScan(roots []string) error {
+	return a.StartScanEx(roots, true)
+}
+
+// StartScanEx 指定是否增量扫描。增量模式复用未变化的叶子目录（目录 mtime 判定），
+// 结构变化（增/删/改名）任意深度都能检出；叶子目录内文件原地改写大小属盲区，
+// 需要绝对精确时前端应传 incremental=false。
+func (a *App) StartScanEx(roots []string, incremental bool) error {
 	if !a.scanning.CompareAndSwap(false, true) {
 		return fmt.Errorf("已有扫描正在进行")
 	}
@@ -170,7 +178,7 @@ func (a *App) StartScan(roots []string) error {
 	}
 	go func() {
 		defer a.scanning.Store(false)
-		res, err := scanner.Scan(scanner.Options{
+		opt := scanner.Options{
 			Roots:   roots,
 			Workers: 8,
 			Progress: func(files, dirs int64, bytes int64) {
@@ -178,7 +186,12 @@ func (a *App) StartScan(roots []string) error {
 					"files": files, "dirs": dirs, "bytes": bytes,
 				})
 			},
-		})
+		}
+		if incremental {
+			opt.Incremental = true
+			opt.Prev = history.PrevForScope(roots) // nil=无匹配历史，Scan 自动全量
+		}
+		res, err := scanner.Scan(opt)
 		if err != nil {
 			a.emit("scan:error", err.Error())
 			return
@@ -661,11 +674,13 @@ func (a *App) ListFiles(path string) []FileRow {
 		if i >= 200 {
 			break
 		}
-		out = append(out, FileRow{
+		row := FileRow{
 			Path:    filepath.Join(path, f.name),
 			Size:    f.size,
 			ModTime: f.mt.Format("2006-01-02 15:04"),
-		})
+		}
+		tagFileRow(&row)
+		out = append(out, row)
 	}
 	return out
 }

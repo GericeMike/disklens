@@ -86,6 +86,10 @@ export function StartScan(arg1) {
   return window['go']['main']['App']['StartScan'](arg1);
 }
 
+export function StartScanEx(arg1, arg2) {
+  return window['go']['main']['App']['StartScanEx'](arg1, arg2);
+}
+
 export function TestAI() {
   return window['go']['main']['App']['TestAI']();
 }

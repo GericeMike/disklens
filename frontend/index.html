@@ -81,6 +81,10 @@
                 </div>
                 <div id="scan-custom-list"></div>
             </div>
+            <label class="form-check scan-inc-row" title="未变化的叶子目录直接复用上次结果，速度快得多。新增/删除/改名一定能检出；个别原地改写大小的文件（数据库/日志类）可能延迟发现，需要绝对精确时取消勾选">
+                <input type="checkbox" id="scan-incremental" checked>
+                <span class="form-check-label">增量扫描<small>（复用未变目录，更快；原地改写的大文件可能延迟发现）</small></span>
+            </label>
             <div class="progressbar indet hidden" id="scan-bar"><div></div></div>
             <div class="progress-meta hidden" id="scan-meta"></div>
             <div class="scan-error hidden" id="scan-error"></div>

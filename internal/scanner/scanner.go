@@ -27,6 +27,14 @@ type Options struct {
 	Roots    []string // 扫描根列表，如 C:\ D:\
 	Workers  int      // 并发 worker 数，0=自动
 	Progress func(files, dirs int64, bytes int64)
+
+	// Incremental 增量模式：叶子目录且目录修改时间与上次一致时整树复用上次结果，
+	// 不再递归遍历。结构变化（新增/删除/改名）在任意深度都必然更新其直接父目录的
+	// mtime，因此都能检出；盲区仅剩「叶子目录内文件被原地改写大小」（如数据库
+	// WAL、日志追加），调用方应在 UI 注明并提供完整扫描开关。
+	// 无可用历史（Prev=nil）时自动退化为全量扫描。
+	Incremental bool
+	Prev        *Result // 上次扫描结果（须与本次 Roots 完全同范围），由调用方加载
 }
 
 type fileHeap []FileInfo
@@ -83,9 +91,35 @@ func (q *taskQueue) close() {
 type nodeState struct {
 	node      *Node
 	parent    *nodeState
-	pending   int32 // 未完成子目录数
-	ownDone   int32 // 本目录条目处理完成标记
-	completed int32 // 完成级联已执行标记（CAS 防重）
+	pending   int32   // 未完成子目录数
+	ownDone   int32   // 本目录条目处理完成标记
+	completed int32   // 完成级联已执行标记（CAS 防重）
+	histMu    sync.Mutex
+	hist      []int64 // 子树类型字节直方图（完成时快照进 node.Cat）
+	histF     []int64 // 子树类型文件数直方图（完成时快照进 node.CatF）
+}
+
+// mergeHist 子树直方图并入本节点（子完成级联 / 嫁接 / 本地文件汇总共用）
+func (ns *nodeState) mergeHist(cb, cf []int64) {
+	if len(cb) == 0 && len(cf) == 0 {
+		return
+	}
+	ns.histMu.Lock()
+	defer ns.histMu.Unlock()
+	if len(ns.hist) == 0 {
+		ns.hist = make([]int64, catCount)
+	}
+	if len(ns.histF) == 0 {
+		ns.histF = make([]int64, catCount)
+	}
+	for i := 0; i < catCount; i++ {
+		if i < len(cb) {
+			ns.hist[i] += cb[i]
+		}
+		if i < len(cf) {
+			ns.histF[i] += cf[i]
+		}
+	}
 }
 
 type shardStat struct {
@@ -106,6 +140,9 @@ type scanner struct {
 	totalBytes, totalFiles, totalDirs, errors atomic.Int64
 	errMu     sync.Mutex
 	errSamples []string
+	prevIdx   map[string]*Node // 增量模式：上次扫描的目录索引（小写路径 → 节点）
+	graftMu   sync.Mutex
+	grafted   []string // 被嫁接的子树路径（小写），供 TopFiles 从上次结果回收
 }
 
 // Scan 执行扫描，返回完整内存结果（未裁剪的树）。
@@ -117,12 +154,32 @@ func Scan(opt Options) (*Result, error) {
 		opt.Workers = 8
 	}
 	// 根必须存在：拼错路径的静默空扫描比报错更误导
+	rootMTime := map[string]int64{}
 	for _, r := range opt.Roots {
-		if _, err := os.Stat(normalizeRoot(r)); err != nil {
+		p := normalizeRoot(r)
+		fi, err := os.Stat(p)
+		if err != nil {
 			return nil, fmt.Errorf("扫描根不存在或无法访问: %s", r)
 		}
+		rootMTime[p] = fi.ModTime().UnixNano()
 	}
 	s := &scanner{opt: opt, queue: newTaskQueue(), top: make(fileHeap, 0, topFilesKeep)}
+	// 增量模式：为上次结果建目录索引（小写路径 → 节点）。找不到的路径照常遍历。
+	if opt.Incremental && opt.Prev != nil {
+		s.prevIdx = map[string]*Node{}
+		var indexTree func(n *Node)
+		indexTree = func(n *Node) {
+			base := strings.TrimSuffix(n.Path0, `\`)
+			for _, c := range n.Children {
+				key := strings.ToLower(base + `\` + c.Name)
+				s.prevIdx[key] = c
+				indexTree(c)
+			}
+		}
+		for _, r := range opt.Prev.Roots {
+			indexTree(r)
+		}
+	}
 	for i := 0; i < opt.Workers; i++ {
 		s.shards = append(s.shards, &shardStat{bytes: map[string]int64{}, files: map[string]int64{}})
 	}
@@ -174,7 +231,7 @@ func Scan(opt Options) (*Result, error) {
 
 	for _, root := range opt.Roots {
 		p := normalizeRoot(root)
-		rn := &Node{Name: p, Path0: p}
+		rn := &Node{Name: p, Path0: p, MTime: rootMTime[p]}
 		s.roots = append(s.roots, rn)
 		s.inFlight.Add(1)
 		s.queue.push(&nodeState{node: rn})
@@ -196,6 +253,19 @@ func Scan(opt Options) (*Result, error) {
 	s.wg.Wait()
 	if opt.Progress != nil {
 		close(progressDone)
+	}
+	// 增量模式：被嫁接的子树内文件没有经过本次遍历，其大文件榜条目从上次结果回收——
+	// 嫁接的前提是目录 mtime 未变，其中文件集必然与上次一致，条目仍然准确。
+	if opt.Incremental && opt.Prev != nil && len(s.grafted) > 0 {
+		for _, fi := range opt.Prev.TopFiles {
+			lp := strings.ToLower(fi.Path)
+			for _, g := range s.grafted {
+				if lp == g || strings.HasPrefix(lp, g+`\`) {
+					s.pushTop(fi)
+					break
+				}
+			}
+		}
 	}
 
 	res.FinishedAt = time.Now()
@@ -234,13 +304,17 @@ func (s *scanner) processDir(ns *nodeState, sh *shardStat) {
 
 	var children []*nodeState
 	var localBytes, localFiles int64
+	localHist := make([]int64, catCount)
+	localHistF := make([]int64, catCount)
 	// 根节点 Path0 以反斜杠结尾（C:\），直接拼会产生 C:\\Users 双反斜杠，先去尾
 	base := strings.TrimSuffix(ns.node.Path0, `\`)
 	for _, e := range entries {
 		full := base + "\\" + e.Name()
 		if e.IsDir() {
 			// junction/符号链接跳过（防循环、防重复计数）
-			if info, ierr := e.Info(); ierr == nil {
+			var info os.FileInfo
+			if i, ierr := e.Info(); ierr == nil {
+				info = i
 				if attrs, ok := info.Sys().(*syscall.Win32FileAttributeData); ok && attrs.FileAttributes&fileAttributeReparsePoint != 0 {
 					continue
 				}
@@ -248,7 +322,28 @@ func (s *scanner) processDir(ns *nodeState, sh *shardStat) {
 				s.noteError(ierr, full)
 				continue
 			}
-			child := &Node{Name: e.Name(), Path0: full}
+			// 增量嫁接：上次扫描时该目录是叶子（无子目录）且目录 mtime 至今未变
+			// → 其文件集与上次完全一致，整树复用，不再递归。结构变化（增/删/改名）
+			// 必然更新直接父目录 mtime，因此在任意深度都能检出，见 Options.Incremental。
+			if s.prevIdx != nil {
+				if pn := s.prevIdx[strings.ToLower(full)]; pn != nil && len(pn.Children) == 0 &&
+					pn.MTime != 0 && pn.MTime == info.ModTime().UnixNano() && len(pn.Cat) > 0 {
+					fillPath0(pn, full)
+					ns.node.Children = append(ns.node.Children, pn)
+					atomic.AddInt64(&ns.node.Bytes, pn.Bytes)
+					atomic.AddInt64(&ns.node.Files, pn.Files)
+					atomic.AddInt64(&ns.node.Dirs, pn.Dirs+1)
+					ns.mergeHist(pn.Cat, pn.CatF)
+					s.totalBytes.Add(pn.Bytes)
+					s.totalFiles.Add(pn.Files)
+					s.totalDirs.Add(pn.Dirs + 1)
+					s.heapMu.Lock()
+					s.grafted = append(s.grafted, strings.ToLower(full))
+					s.heapMu.Unlock()
+					continue
+				}
+			}
+			child := &Node{Name: e.Name(), Path0: full, MTime: info.ModTime().UnixNano()}
 			ns.node.Children = append(ns.node.Children, child)
 			atomic.AddInt32(&ns.pending, 1)
 			children = append(children, &nodeState{node: child, parent: ns})
@@ -264,6 +359,8 @@ func (s *scanner) processDir(ns *nodeState, sh *shardStat) {
 			s.totalBytes.Add(sz)
 			s.totalFiles.Add(1)
 			cat := categoryOf(strings.ToLower(filepath.Ext(e.Name())))
+			localHist[catIndexOf(cat)] += sz
+			localHistF[catIndexOf(cat)]++
 			sh.mu.Lock()
 			sh.bytes[cat] += sz
 			sh.files[cat]++
@@ -271,6 +368,7 @@ func (s *scanner) processDir(ns *nodeState, sh *shardStat) {
 			s.pushTop(FileInfo{Path: full, Size: sz, ModTime: info.ModTime()})
 		}
 	}
+	ns.mergeHist(localHist, localHistF)
 	// 子任务入无界队列（不阻塞）
 	for _, cs := range children {
 		s.inFlight.Add(1)
@@ -295,6 +393,17 @@ func (s *scanner) tryComplete(ns *nodeState) {
 	if !atomic.CompareAndSwapInt32(&ns.completed, 0, 1) {
 		return
 	}
+	// 直方图随完成级联搬运：快照进本节点（供增量嫁接复用），再并入父节点
+	ns.histMu.Lock()
+	if anyNonZero(ns.hist) {
+		ns.node.Cat = ns.hist
+	}
+	if anyNonZero(ns.histF) {
+		ns.node.CatF = ns.histF
+	}
+	cb, cf := ns.hist, ns.histF
+	ns.hist, ns.histF = nil, nil
+	ns.histMu.Unlock()
 	p := ns.parent
 	if p == nil {
 		return
@@ -302,8 +411,27 @@ func (s *scanner) tryComplete(ns *nodeState) {
 	atomic.AddInt64(&p.node.Bytes, atomic.LoadInt64(&ns.node.Bytes))
 	atomic.AddInt64(&p.node.Files, atomic.LoadInt64(&ns.node.Files))
 	atomic.AddInt64(&p.node.Dirs, atomic.LoadInt64(&ns.node.Dirs)+1)
+	p.mergeHist(cb, cf)
 	if atomic.AddInt32(&p.pending, -1) == 0 {
 		s.tryComplete(p)
+	}
+}
+
+func anyNonZero(v []int64) bool {
+	for _, x := range v {
+		if x != 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// fillPath0 给嫁接进来的历史子树（不含 Path0）重建完整路径链
+func fillPath0(n *Node, prefix string) {
+	n.Path0 = prefix
+	base := strings.TrimSuffix(prefix, `\`)
+	for _, c := range n.Children {
+		fillPath0(c, base+`\`+c.Name)
 	}
 }
 
@@ -327,21 +455,32 @@ func (s *scanner) pushTop(fi FileInfo) {
 }
 
 func (s *scanner) mergeStats() []TypeStat {
+	// 类型统计 = 各根节点子树直方图求和。直方图包含遍历到的文件与增量嫁接的
+	// 子树（嫁接部分从上次存档按桶搬运），因此增量模式的统计依然完整。
+	// （shards 里的实时计数是旧通道，为兼容保留维护，但不再参与汇总。）
 	merged := map[string]*TypeStat{}
-	for _, sh := range s.shards {
-		sh.mu.Lock()
-		for cat, b := range sh.bytes {
-			m := merged[cat]
-			if m == nil {
-				m = &TypeStat{Category: cat}
-				merged[cat] = m
+	add := func(cat string, b, f int64) {
+		m := merged[cat]
+		if m == nil {
+			m = &TypeStat{Category: cat}
+			merged[cat] = m
+		}
+		m.Bytes += b
+		m.Files += f
+	}
+	for _, r := range s.roots {
+		for i, cat := range CatOrder {
+			var b, f int64
+			if i < len(r.Cat) {
+				b = r.Cat[i]
 			}
-			m.Bytes += b
+			if i < len(r.CatF) {
+				f = r.CatF[i]
+			}
+			if b != 0 || f != 0 {
+				add(cat, b, f)
+			}
 		}
-		for cat, f := range sh.files {
-			merged[cat].Files += f
-		}
-		sh.mu.Unlock()
 	}
 	out := make([]TypeStat, 0, len(merged))
 	for _, v := range merged {
@@ -379,6 +518,11 @@ func volumeRoot(root string) string {
 		return root
 	}
 	return vol + `\`
+}
+
+// NormalizeRoot 归一化扫描根（导出供历史比对范围用）：盘符补根反斜杠，相对路径转绝对
+func NormalizeRoot(arg string) string {
+	return normalizeRoot(arg)
 }
 
 // normalizeRoot 归一化扫描根：盘符补根反斜杠，相对路径转绝对

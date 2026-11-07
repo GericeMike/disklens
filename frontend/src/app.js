@@ -493,16 +493,21 @@ async function renderFiles(path) {
     const name = nodeName(f.path);
     return `
     <div class="file-row" title="${esc(f.path)}">
-      <span class="dname" title="${esc(name)}">${esc(name)}</span>
+      ${f.risk ? riskPill(f.risk) : ''}
+      <span class="dname" title="${esc(f.path)}">${esc(name)}</span>
       <span class="dsize num">${fmtGB(f.size)}</span>
       <span class="dmtime num">${esc(f.modTime)}</span>
-      <button class="ddel" data-del="${esc(f.path)}" data-name="${esc(name)}" data-bytes="${f.size || 0}" data-risk="" title="送入回收站">🗑</button>
+      <button class="dinfo" data-explain="${esc(f.path)}" title="知识库解释 / AI 解读">ⓘ</button>
+      <button class="ddel" data-del="${esc(f.path)}" data-name="${esc(name)}" data-bytes="${f.size || 0}" data-risk="${esc(f.risk || '')}" title="送入回收站">🗑</button>
     </div>`;
   }).join('') || `<div class="empty-inline">本目录没有文件</div>`;
+  rows.querySelectorAll('.dinfo').forEach(btn => {
+    btn.addEventListener('click', (e) => { e.stopPropagation(); openExplain(btn.dataset.explain); });
+  });
   rows.querySelectorAll('.ddel').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      openDelModal(btn.dataset.del, btn.dataset.name, Number(btn.dataset.bytes) || 0, '');
+      openDelModal(btn.dataset.del, btn.dataset.name, Number(btn.dataset.bytes) || 0, btn.dataset.risk);
     });
   });
 }
@@ -1009,13 +1014,14 @@ async function startScan() {
     scanErr('至少勾选一个磁盘，或添加要扫描的文件夹');
     return;
   }
+  const incremental = $('#scan-incremental') ? $('#scan-incremental').checked : true;
   $('#scan-start').disabled = true;
   $('#scan-error').classList.add('hidden');
   $('#scan-bar').classList.remove('hidden');
   $('#scan-bar').classList.add('indet');
   $('#scan-meta').classList.remove('hidden');
-  $('#scan-meta').textContent = '正在扫描…';
-  await api().StartScan(roots);
+  $('#scan-meta').textContent = incremental ? '正在扫描（增量：复用未变化的目录）…' : '正在扫描…';
+  await api().StartScanEx(roots, incremental);
 }
 
 function wireScanEvents() {

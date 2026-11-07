@@ -14,6 +14,30 @@ var extMap = buildExtMap()
 // CategoryOf 按扩展名返回中文大类（导出供 GUI 类型明细列表过滤用）
 func CategoryOf(ext string) string { return categoryOf(ext) }
 
+// CatOrder 类型直方图固定桶序（Node.Cat/CatF 与之一一对应；
+// 增量嫁接按桶搬运统计，桶序永不改动，新增大类只许追加）
+var CatOrder = []string{"视频", "音频", "图片", "文档", "压缩包", "开发与代码", "虚拟机与镜像", "数据库", "日志", "无扩展名", "其他"}
+
+var catIdx = buildCatIdx()
+
+func buildCatIdx() map[string]int {
+	m := make(map[string]int, len(CatOrder))
+	for i, c := range CatOrder {
+		m[c] = i
+	}
+	return m
+}
+
+// catIndexOf 大类 → 直方图桶下标（未知大类归入「其他」）
+func catIndexOf(cat string) int {
+	if i, ok := catIdx[cat]; ok {
+		return i
+	}
+	return catIdx["其他"]
+}
+
+var catCount = len(CatOrder)
+
 func buildExtMap() map[string]string {
 	m := map[string]string{}
 	add := func(cat string, exts ...string) {

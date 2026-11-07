@@ -116,14 +116,20 @@ func toMeta(res *scanner.Result) Meta {
 	}
 }
 
-// clonePruned 深拷贝并按层裁剪
+// clonePruned 深拷贝并按层裁剪（MTime/Cat/CatF 为增量扫描的嫁接依据，必须保留）
 func clonePruned(nodes []*scanner.Node, depth int) []*scanner.Node {
 	if len(nodes) == 0 {
 		return nil
 	}
 	out := make([]*scanner.Node, 0, len(nodes))
 	for _, n := range nodes {
-		c := &scanner.Node{Name: n.Name, Bytes: n.Bytes, Files: n.Files, Dirs: n.Dirs}
+		c := &scanner.Node{Name: n.Name, Bytes: n.Bytes, Files: n.Files, Dirs: n.Dirs, MTime: n.MTime}
+		if len(n.Cat) > 0 {
+			c.Cat = append([]int64(nil), n.Cat...)
+		}
+		if len(n.CatF) > 0 {
+			c.CatF = append([]int64(nil), n.CatF...)
+		}
 		if depth < pruneDepth {
 			c.Children = clonePruned(n.Children, depth+1)
 		}
@@ -182,12 +188,47 @@ func loadFile(path string) (*Snapshot, error) {
 func LoadLatest() (*Snapshot, error) {
 	names, err := List()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("暂无历史存档")
 	}
 	if len(names) == 0 {
 		return nil, fmt.Errorf("暂无历史存档")
 	}
 	return LoadByName(names[0])
+}
+
+// PrevForScope 增量扫描取历史：按时间倒序找第一份扫描范围与 roots 完全一致的存档，
+// 还原为可用扫描结果。找不到（无历史/范围不同/读取失败）返回 nil，调用方退化为全量。
+func PrevForScope(roots []string) *scanner.Result {
+	names, err := List()
+	if err != nil {
+		return nil
+	}
+	want := make(map[string]bool, len(roots))
+	for _, r := range roots {
+		want[strings.ToLower(scanner.NormalizeRoot(r))] = true
+	}
+	for _, name := range names {
+		snap, err := LoadByName(name)
+		if err != nil || len(snap.Meta.Scope) != len(roots) {
+			continue
+		}
+		got := make(map[string]bool, len(snap.Meta.Scope))
+		for _, s := range snap.Meta.Scope {
+			got[strings.ToLower(s)] = true
+		}
+		same := len(got) == len(want)
+		for k := range want {
+			if !got[k] {
+				same = false
+				break
+			}
+		}
+		if !same {
+			continue
+		}
+		return SnapshotToResult(snap)
+	}
+	return nil
 }
 
 // SnapshotToResult 把裁剪树存档还原为可用的扫描结果（重建各节点完整路径）

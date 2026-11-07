@@ -5,12 +5,19 @@ import "time"
 
 // Node 目录树节点，Bytes/Files/Dirs 含全部子孙聚合。
 // Path0 为完整路径，仅扫描期使用，不序列化。
+// MTime 为目录自身修改时间（UnixNano）：增量扫描据此判断「叶子目录未变」整树复用。
+// Cat/CatF 为子树各文件类型大类的字节/文件数直方图（桶序见 CatOrder），
+// 供增量嫁接时搬运类型统计；全零时省略。
 type Node struct {
 	Name     string  `json:"n"`
 	Bytes    int64   `json:"b"`
 	Files    int64   `json:"f"`
 	Dirs     int64   `json:"d,omitempty"`
 	Children []*Node `json:"c,omitempty"`
+
+	MTime int64   `json:"mt,omitempty"`
+	Cat   []int64 `json:"cb,omitempty"`
+	CatF  []int64 `json:"cf,omitempty"`
 
 	Path0 string `json:"-"`
 }
