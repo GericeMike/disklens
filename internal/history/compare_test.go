@@ -68,33 +68,33 @@ func baseName(p string) string {
 // TestCompareFold 深层变化折叠为最浅祖先；盘根展示但不吞并他人
 func TestCompareFold(t *testing.T) {
 	old := mkTree(`C:\`, map[string]int64{
-		`C:\baidunetdiskdownload`:                    100,
-		`C:\baidunetdiskdownload\ZS226`:              60,
-		`C:\baidunetdiskdownload\ZS226\MW2`:          60,
-		`C:\keep`:                                    10,
-		`C:\stockinfo\.mimosa\hook-a`:                0,
-		`C:\stockinfo\.mimosa\hook-b`:                0,
+		`C:\netdisk`:                  100,
+		`C:\netdisk\AppA`:             60,
+		`C:\netdisk\AppA\DataB`:       60,
+		`C:\keep`:                     10,
+		`C:\appdata\.mimosa\hook-a`:   0,
+		`C:\appdata\.mimosa\hook-b`:   0,
 	})
 	cur := mkTree(`C:\`, map[string]int64{
-		`C:\baidunetdiskdownload`:                    35, // -65
-		`C:\baidunetdiskdownload\ZS226`:              0,  // -60（被祖先折叠）
-		`C:\baidunetdiskdownload\ZS226\MW2`:          0,  // -60（被祖先折叠）
-		`C:\keep`:                                    10, // 不变
-		`C:\stockinfo\.mimosa\hook-a`:                40, // +40
-		`C:\stockinfo\.mimosa\hook-b`:                0,  // 消失 -0? bytes 0→absent -0，无变化量，minBytes 过滤
+		`C:\netdisk`:                  35, // -65
+		`C:\netdisk\AppA`:             0,  // -60（被祖先折叠）
+		`C:\netdisk\AppA\DataB`:       0,  // -60（被祖先折叠）
+		`C:\keep`:                     10, // 不变
+		`C:\appdata\.mimosa\hook-a`:   40, // +40
+		`C:\appdata\.mimosa\hook-b`:   0,  // 消失（bytes 0，无变化量，minBytes 过滤）
 	})
 	deltas, err := Compare(old, cur, 1)
 	if err != nil {
 		t.Fatalf("Compare: %v", err)
 	}
 	// 期望集合（顺序不敏感）：
-	//   C:\baidunetdiskdownload —— ZS226/MW2 深层变化被它折叠
+	//   C:\netdisk —— AppA/DataB 深层变化被它折叠
 	//   C:\ —— 盘根展示但不吞并他人
-	//   C:\stockinfo —— hook-a 的变化被浅层祖先聚合概括
+	//   C:\appdata —— hook-a 的变化被浅层祖先聚合概括
 	want := map[string]bool{
-		`C:\baidunetdiskdownload`: true,
-		`C:\`:                     true,
-		`C:\stockinfo`:            true,
+		`C:\netdisk`:  true,
+		`C:\`:         true,
+		`C:\appdata`:  true,
 	}
 	got := map[string]bool{}
 	for _, d := range deltas {
@@ -110,7 +110,7 @@ func TestCompareFold(t *testing.T) {
 		}
 	}
 	// 深层条目必须被折叠
-	for _, bad := range []string{`C:\baidunetdiskdownload\ZS226`, `C:\baidunetdiskdownload\ZS226\MW2`, `C:\stockinfo\.mimosa\hook-a`} {
+	for _, bad := range []string{`C:\netdisk\AppA`, `C:\netdisk\AppA\DataB`, `C:\appdata\.mimosa\hook-a`} {
 		if got[bad] {
 			t.Errorf("%s 应被祖先折叠", bad)
 		}

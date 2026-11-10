@@ -37,4 +37,5 @@ require (
 	golang.org/x/text v0.42.0 // indirect
 )
 
-// replace github.com/wailsapp/wails/v2 v2.17.1 => C:\Users\GericeMike\go\pkg\mod
+// 本地调试 Wails 源码时按需取消注释：
+// replace github.com/wailsapp/wails/v2 => <本地 wails 仓库路径>

@@ -1,5 +1,4 @@
-// 盘镜 DiskLens — 预览样例数据（ believable、可对账；正式版由扫描引擎填充 ）
-// 磁盘实况演示数据（2026-11-04 Get-CimInstance），目录数字为演示值，交付前由真实扫描替换。
+// 盘镜 DiskLens — 预览样例数据（纯演示：数字与名称均为虚构，正式版由扫描引擎填充）
 
 export const drives = {
   C: { label: 'C 盘 · NVMe 系统盘', total: 512, free: 256 },
@@ -8,15 +7,14 @@ export const drives = {
 
 // D 盘顶层目录（GB），sum === used
 export const dTree = [
-  { name: '剪辑工程', value: 118.4 },
-  { name: 'SteamLibrary', value: 96.3 },
-  { name: '虚拟机', value: 49.2 },
-  { name: '微信文件', value: 45.2 },
-  { name: '备份', value: 41.8 },
-  { name: '下载', value: 38.7 },
-  { name: '网盘缓存', value: 22.4 },
-  { name: '开发缓存', value: 12.8 },
-  { name: '其他', value: 3.0 },
+  { name: '游戏库', value: 420 },
+  { name: '视频工程', value: 180 },
+  { name: '系统镜像', value: 96 },
+  { name: '素材库', value: 90 },
+  { name: '下载', value: 70 },
+  { name: '虚拟机', value: 48 },
+  { name: '缓存', value: 12 },
+  { name: '其他', value: 8 },
 ];
 
 export const cleanItems = [
@@ -33,21 +31,21 @@ export const cleanSystemOp = 12.8;
 
 // 90 天增长 / 释放（D 盘主要变动项）
 export const growth = {
-  labels: ['微信文件', '剪辑工程', '下载', '备份', 'SteamLibrary'],
-  up: [18.3, 9.6, 4.2, 2.1],
-  down: [12.5],
+  labels: ['游戏库', '视频工程', '下载', '备份', '系统镜像'],
+  up: [120, 60, 30, 15],
+  down: [45],
 };
 
 export const topFiles = [
   { name: 'win11-dev.vhdx',            where: 'D:\\虚拟机',              size: 38.2, mtime: '2025-08-12' },
-  { name: '客户A-成片.mp4',            where: 'D:\\剪辑工程\\客户A',     size: 24.6, mtime: '2026-09-30' },
-  { name: 'blackmyth-wukong-4k.pak',   where: 'D:\\SteamLibrary\\steamapps', size: 21.9, mtime: '2026-10-18' },
-  { name: '2026-10全盘备份.zip',       where: 'D:\\备份',                size: 18.4, mtime: '2026-10-26' },
+  { name: '项目A-成片.mp4',            where: 'D:\\视频工程\\项目A',     size: 24.6, mtime: '2026-09-30' },
+  { name: 'game-4k.pak',               where: 'D:\\游戏库\\steamapps',   size: 21.9, mtime: '2026-10-18' },
+  { name: '全盘备份.zip',              where: 'D:\\备份',                size: 18.4, mtime: '2026-10-26' },
   { name: 'ubuntu-24.04.1-desktop.iso', where: 'D:\\下载',               size: 5.8,  mtime: '2026-03-15' },
 ];
 
 // ---- 对账断言（§2.1: 数字必须能合上） ----
-const dUsed = +(drives.D.total - drives.D.free).toFixed(1);           // 427.8
+const dUsed = +(drives.D.total - drives.D.free).toFixed(1);           // 924
 const treeSum = +dTree.reduce((s, d) => s + d.value, 0).toFixed(1);
 console.assert(Math.abs(treeSum - dUsed) < 0.01, `D盘 treemap 合计 ${treeSum} ≠ 已用 ${dUsed}`);
 const cleanSum = +cleanItems.filter(i => i.risk !== 'system').reduce((s, i) => s + i.size, 0).toFixed(1);

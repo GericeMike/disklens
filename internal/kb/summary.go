@@ -121,7 +121,7 @@ func BuildTreeIndex(res *scanner.Result) TreeIndex {
 
 // ChildrenOf 从索引取某路径的子目录列表（按大小降序）。
 // 子路径 = 去尾分隔符的自身路径 + 子名；不能用 parentPath——那会丢掉最后一级
-// （如 C:\Users 的子目录曾被拼成 C:\GericeMike，下钻深层全部扑空）。
+// （如 C:\Users 的子目录曾被拼成 C:\某用户名，下钻深层全部扑空）。
 func ChildrenOf(idx TreeIndex, path string) []CleanPath {
 	n, ok := idx[strings.ToLower(filepath.Clean(path))]
 	if !ok {
